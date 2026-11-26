@@ -390,7 +390,7 @@ const CHARACTER_DEFS = {
     minPulseRangeLife: 0.25,
     maxPulseRangeLife: 0.78,
     pulseCooldown: 0.38,
-    homingStrength: 0.12,
+    homingStrength: 0.01,
     projectileStyle: "mystic_eye",
     projectileColorOverride: "#4cc9f0",
     invincibleDuration: 1.1,
