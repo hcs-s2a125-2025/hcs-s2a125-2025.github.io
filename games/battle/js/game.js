@@ -701,6 +701,7 @@ function triggerPulse(fighter, chargeRatio = 0) {
     radius: fighter.def.pulseRadius,
     knockVx: baseKnock + clampedRatio * 65,
     chillDuration: fighter.def.chillOnHit || 0,
+    homingStrength: fighter.def.homingStrength || 0,
     life: rangeLife,
     maxLife: rangeLife,
     age: 0,
@@ -723,6 +724,14 @@ function triggerPulse(fighter, chargeRatio = 0) {
   }
 
   spawnParticles(cx + fighter.facing * 22, cy, isBullet ? 6 : 8, projColor);
+  if (style === "party_popper") {
+    shockwaves.push({
+      ownerId: fighter.id, x: cx + fighter.facing * 18, y: cy,
+      maxRadius: 38, radius: 10, life: 0.16, maxLife: 0.16,
+      color: "#ffd166", knockVx: 220, hitIds: new Set()
+    });
+    spawnParticles(cx + fighter.facing * 18, cy, 10, "#ffd166");
+  }
 }
 
 function triggerJokerBurst(ownerId, playerColor, x, y, dir) {
@@ -1236,6 +1245,64 @@ function triggerSpecialAction(fighter) {
       color: "#ffd166"
     });
     spawnParticles(cx, fighter.y + fighter.h, 16, "#ffd166");
+  } else if (type === "mystic_orb") {
+    fighter.specialCooldown = fighter.def.specialCooldown;
+    fighter.squashX = 1.24;
+    fighter.squashY = 0.82;
+    const orbX = Math.max(40, Math.min(VIEW_WIDTH - 40, cx + fighter.facing * 54));
+    const orbY = cy - 8;
+    spawnPopup(orbX, orbY - 24, "🪬 ORACLE EYE!", "#4cc9f0");
+    hazardZones.push({
+      ownerId: fighter.id, type: "mystic_orb", x: orbX, y: orbY,
+      radius: 34, life: 3.4, maxLife: 3.4, color: "#4cc9f0",
+      hitIds: new Set()
+    });
+    spawnParticles(orbX, orbY, 18, "#4cc9f0");
+  } else if (type === "mecha_barrage") {
+    fighter.specialCooldown = fighter.def.specialCooldown;
+    fighter.squashX = 1.28;
+    fighter.squashY = 0.78;
+    fighter.hoverTimer = 0.62;
+    fighter.vy = -210;
+    spawnPopup(cx, cy - 28, "🤖 MISSILE LOCK!", "#72efdd");
+    const angles = [0.08, 0.25, 0.42, 0.59];
+    angles.forEach((ang, idx) => {
+      const speed = 570 + idx * 30;
+      pulses.push({
+        ownerId: fighter.id, playerColor: fighter.accentColor,
+        style: "mecha_missile", x: cx + fighter.facing * 20,
+        y: cy - 10 + idx * 4, vx: Math.cos(ang) * speed * fighter.facing,
+        vy: Math.sin(ang) * speed, dir: fighter.facing,
+        radius: 15, knockVx: 410, life: 0.68, maxLife: 0.68,
+        age: 0, color: "#ff9f1c"
+      });
+    });
+    spawnParticles(cx, cy, 20, "#72efdd");
+  } else if (type === "party_carnival") {
+    fighter.specialCooldown = fighter.def.specialCooldown;
+    fighter.pulseTimer = PULSE_DURATION;
+    fighter.squashX = 1.32;
+    fighter.squashY = 0.74;
+    spawnPopup(cx, cy - 30, "🥳 PARTY TIME!!", "#ffd166");
+    shockwaves.push({
+      ownerId: fighter.id, x: cx, y: cy, maxRadius: 84,
+      radius: 14, life: 0.24, maxLife: 0.24,
+      color: "#ff5c8a", knockVx: 430, hitIds: new Set()
+    });
+    const partyColors = ["#ff5c8a", "#ffd166", "#72efdd", "#c77dff", "#4cc9f0", "#ff9f1c"];
+    const angles = [-2.55, -2.2, -1.85, -1.3, -0.95, -0.6];
+    angles.forEach((ang, idx) => {
+      pulses.push({
+        ownerId: fighter.id, playerColor: fighter.accentColor,
+        style: "bounce_ball", x: cx, y: cy - 12,
+        vx: Math.cos(ang) * 420, vy: Math.sin(ang) * 440 - 60,
+        gravity: 1120, dir: Math.cos(ang) >= 0 ? 1 : -1,
+        radius: 16, knockVx: 390, life: 0.72, maxLife: 0.72,
+        age: 0, color: partyColors[idx % partyColors.length]
+      });
+    });
+    spawnParticles(cx, cy, 26, "#ffd166");
+    spawnParticles(cx, cy, 18, "#ff5c8a");
   }
 
   updateHud();
@@ -1496,8 +1563,13 @@ function stepFighter(f, input, dt, platforms) {
     }
   }
 
-  const gravScale = f.mindChargeTimer > 0 ? 0.45 : (f.def.gravityScale || 1.0);
-  f.vy += (f.meteorSlamActive ? GRAVITY * 1.6 : GRAVITY * gravScale) * dt;
+  if (f.hoverTimer > 0) {
+    f.hoverTimer = Math.max(0, f.hoverTimer - dt);
+    f.vy = 0;
+  } else {
+    const gravScale = f.mindChargeTimer > 0 ? 0.45 : (f.def.gravityScale || 1.0);
+    f.vy += (f.meteorSlamActive ? GRAVITY * 1.6 : GRAVITY * gravScale) * dt;
+  }
 
   f.x += f.vx * dt;
   if (f.x < 16) {
@@ -1788,6 +1860,24 @@ function update(dt) {
     for (let i = pulses.length - 1; i >= 0; i--) {
       const pl = pulses[i];
       pl.age = (pl.age || 0) + dt;
+      if (pl.homingStrength > 0) {
+        const target = fighters.find((f) => f.id !== pl.ownerId);
+        if (target && target.stealthTimer <= 0 && target.hp > 0) {
+          const tx = target.x + target.w / 2;
+          const ty = target.y + target.h / 2;
+          const desiredAngle = Math.atan2(ty - pl.y, tx - pl.x);
+          const currentAngle = Math.atan2(pl.vy || 0, pl.vx);
+          let diff = desiredAngle - currentAngle;
+          while (diff > Math.PI) diff -= Math.PI * 2;
+          while (diff < -Math.PI) diff += Math.PI * 2;
+          const speed = Math.hypot(pl.vx, pl.vy || 0);
+          const maxTurn = pl.homingStrength * dt;
+          const newAngle = currentAngle + Math.max(-maxTurn, Math.min(maxTurn, diff));
+          pl.vx = Math.cos(newAngle) * speed;
+          pl.vy = Math.sin(newAngle) * speed;
+          pl.dir = pl.vx >= 0 ? 1 : -1;
+        }
+      }
       if (pl.accelX) {
         pl.vx += pl.accelX * dt;
         pl.dir = Math.sign(pl.vx) || pl.dir;
@@ -1952,12 +2042,31 @@ function update(dt) {
       if (Math.random() < 0.25) {
         spawnParticles(hz.x + (Math.random() - 0.5) * hz.radius * 1.6, hz.y - 4, 1, hz.color);
       }
-      for (const target of fighters) {
-        if (target.id === hz.ownerId) continue;
-        const tcx = target.x + target.w / 2;
-        const tbottom = target.y + target.h;
-        if (Math.abs(tcx - hz.x) <= hz.radius && Math.abs(tbottom - hz.y) <= 26) {
-          hitFighter(target, hz.x, 380);
+      if (hz.type === "mystic_orb") {
+        for (let j = pulses.length - 1; j >= 0; j--) {
+          const pl = pulses[j];
+          if (pl.ownerId !== hz.ownerId && Math.hypot(pl.x - hz.x, pl.y - hz.y) <= hz.radius + pl.radius) {
+            spawnParticles(pl.x, pl.y, 10, "#4cc9f0");
+            pulses.splice(j, 1);
+          }
+        }
+        for (const target of fighters) {
+          if (target.id === hz.ownerId || hz.hitIds.has(target.id)) continue;
+          const tcx = target.x + target.w / 2, tcy = target.y + target.h / 2;
+          if (Math.hypot(tcx - hz.x, tcy - hz.y) <= hz.radius + target.w * 0.45) {
+            hz.hitIds.add(target.id);
+            hitFighter(target, hz.x, 450);
+            spawnParticles(hz.x, hz.y, 14, "#4cc9f0");
+          }
+        }
+      } else {
+        for (const target of fighters) {
+          if (target.id === hz.ownerId) continue;
+          const tcx = target.x + target.w / 2;
+          const tbottom = target.y + target.h;
+          if (Math.abs(tcx - hz.x) <= hz.radius && Math.abs(tbottom - hz.y) <= 26) {
+            hitFighter(target, hz.x, 380);
+          }
         }
       }
       if (hz.life <= 0) {
@@ -2588,13 +2697,28 @@ function drawPulsesAndParticles() {
     const alpha = Math.min(1, hz.life / 0.35);
     ctx.save();
     ctx.globalAlpha = alpha * 0.88;
-    ctx.fillStyle = "rgba(255, 209, 102, 0.28)";
-    ctx.strokeStyle = hz.color;
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.ellipse(hz.x, hz.y - 3, hz.radius, 8, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
+    if (hz.type === "mystic_orb") {
+      const pulseR = hz.radius + Math.sin(timeElapsed * 10) * 3;
+      ctx.fillStyle = "rgba(76, 201, 240, 0.22)";
+      ctx.strokeStyle = "#4cc9f0";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(hz.x, hz.y, pulseR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.font = '24px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("🪬", hz.x, hz.y);
+    } else {
+      ctx.fillStyle = "rgba(255, 209, 102, 0.28)";
+      ctx.strokeStyle = hz.color;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.ellipse(hz.x, hz.y - 3, hz.radius, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
     ctx.restore();
   }
 
@@ -2983,6 +3107,45 @@ function drawPulsesAndParticles() {
       ctx.beginPath();
       ctx.arc(0, 0, pl.radius, Math.PI - 1.2, Math.PI + 1.2);
       ctx.stroke();
+
+    } else if (pl.style === "mystic_eye") {
+      ctx.rotate(angle);
+      const r = pl.radius * 0.85;
+      ctx.fillStyle = "rgba(76, 201, 240, 0.3)";
+      ctx.strokeStyle = "#4cc9f0";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, r * 1.1, r * 0.68, 0, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#ffd166";
+      ctx.beginPath(); ctx.arc(r * 0.2, 0, r * 0.38, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#0b0918";
+      ctx.beginPath(); ctx.arc(r * 0.28, 0, r * 0.18, 0, Math.PI * 2); ctx.fill();
+
+    } else if (pl.style === "plasma_bolt") {
+      ctx.rotate(angle);
+      const r = pl.radius * 0.85;
+      ctx.fillStyle = "#72efdd"; ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.roundRect(-r * 1.3, -r * 0.48, r * 2.6, r * 0.96, r * 0.48);
+      ctx.fill(); ctx.stroke();
+
+    } else if (pl.style === "mecha_missile") {
+      ctx.rotate(angle);
+      const r = pl.radius * 0.9;
+      ctx.fillStyle = "#ff5c8a";
+      ctx.beginPath(); ctx.moveTo(r * 1.2, 0); ctx.lineTo(r * 0.3, -r * 0.45); ctx.lineTo(r * 0.3, r * 0.45); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "#e0e6ff"; ctx.fillRect(-r * 0.9, -r * 0.38, r * 1.2, r * 0.76);
+      ctx.fillStyle = "#ffd166";
+      ctx.beginPath(); ctx.arc(-r * 1.1, 0, r * 0.36, 0, Math.PI * 2); ctx.fill();
+
+    } else if (pl.style === "party_popper") {
+      ctx.rotate(angle);
+      const r = pl.radius * 0.85;
+      ctx.fillStyle = "#ff5c8a"; ctx.strokeStyle = "#ffd166"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(r * 1.2, 0); ctx.lineTo(-r * 0.9, -r * 0.75); ctx.lineTo(-r * 0.9, r * 0.75); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#72efdd"; ctx.fillRect(r * 0.2, -r * 0.55, 4, 4);
+      ctx.fillStyle = "#ffd166"; ctx.fillRect(r * 0.45, r * 0.25, 4, 4);
 
     } else {
       ctx.rotate(angle);
