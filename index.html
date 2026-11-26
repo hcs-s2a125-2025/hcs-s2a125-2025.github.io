@@ -1,875 +1,145 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ROGUE - Emoji Dungeon</title>
-
-<style>
-/* 基本リセット（元の "- {" の記述ミスを修正） */
-* {
-    box-sizing: border-box;
-}
-
-body {
-    margin: 0;
-    background: #080b08;
-    color: #b8d5ad;
-    font-family: Consolas, "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", monospace;
-    display: flex;
-    justify-content: center;
-    padding: 16px;
-}
-
-main {
-    width: 1180px;
-    max-width: 100%;
-}
-
-header {
-    border-bottom: 1px solid #405040;
-    padding-bottom: 10px;
-    margin-bottom: 14px;
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-}
-
-h1 {
-    margin: 0;
-    letter-spacing: 5px;
-    color: #d9e8ce;
-}
-
-.layout {
-    display: grid;
-    grid-template-columns: 1fr 240px;
-    gap: 12px;
-}
-
-.panel {
-    background: #111813;
-    border: 1px solid #354538;
-    padding: 12px;
-    border-radius: 6px;
-}
-
-/* マップ表示エリア：絵文字がズレないようCSS Gridで均等配置 */
-.map-container {
-    overflow: auto;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: #060907;
-    border-radius: 4px;
-    padding: 6px;
-}
-
-#map {
-    display: grid;
-    grid-template-columns: repeat(56, 16px);
-    grid-template-rows: repeat(27, 16px);
-    gap: 0;
-    user-select: none;
-    line-height: 1;
-}
-
-/* マップの1マス（タイル） */
-.tile {
-    width: 16px;
-    height: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-}
-
-/* 床タイルの表現（絵文字が乗っていない床の質感） */
-.tile-floor {
-    background-color: #131c15;
-    border: 0.5px solid #19241b;
-}
-
-/* 一度探索したが現在視界外のタイル（記憶領域として薄暗く表示） */
-.tile-dim {
-    opacity: 0.35;
-    filter: grayscale(40%);
-}
-
-/* プレイヤーの視認性を高める微かな光彩 */
-.tile-player {
-    filter: drop-shadow(0 0 3px rgba(184, 213, 173, 0.7));
-    z-index: 2;
-}
-
-aside {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 7px;
-}
-
-.stat {
-    background: #080e09;
-    padding: 8px;
-    border: 1px solid #26372a;
-    border-radius: 4px;
-}
-
-.stat span {
-    display: block;
-    font-size: 11px;
-    color: #718671;
-}
-
-.stat b {
-    display: block;
-    font-size: 17px;
-    margin-top: 4px;
-}
-
-#log {
-    height: 190px;
-    overflow-y: auto;
-    font-size: 12px;
-    line-height: 1.5;
-    margin-top: 4px;
-}
-
-.logline {
-    border-bottom: 1px solid #243025;
-    padding: 4px 0;
-}
-
-.controls {
-    font-size: 12px;
-    line-height: 1.75;
-    color: #829582;
-}
-
-.legend-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 4px 8px;
-    margin: 10px 0 14px 0;
-    padding: 8px;
-    background: #080e09;
-    border: 1px solid #26372a;
-    border-radius: 4px;
-    color: #b8d5ad;
-}
-
-.legend-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.legend-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 18px;
-    height: 18px;
-    font-size: 14px;
-}
-
-/* タッチ・クリック用モバイル十字キー（スマホ操作補助） */
-.dpad {
-    display: none;
-    grid-template-columns: repeat(3, 44px);
-    grid-template-rows: repeat(2, 44px);
-    gap: 6px;
-    justify-content: center;
-    margin-top: 10px;
-}
-
-.dpad button {
-    padding: 0;
-    font-size: 16px;
-    border-radius: 6px;
-}
-
-button {
-    width: 100%;
-    background: #203323;
-    border: 1px solid #4b654d;
-    color: #c4d9bb;
-    padding: 9px 12px;
-    cursor: pointer;
-    font-family: inherit;
-    border-radius: 4px;
-    transition: background 0.15s;
-}
-
-button:hover {
-    background: #314b34;
-}
-
-#overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.8);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-}
-
-.modal {
-    background: #111a14;
-    border: 1px solid #58715a;
-    padding: 25px;
-    text-align: center;
-    width: 350px;
-    max-width: 90%;
-    border-radius: 8px;
-}
-
-@media(max-width: 960px) {
-    .layout {
-        grid-template-columns: 1fr;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="公開中のゲーム、ツール、制作物の一覧。">
+  <title>HCS-S2A125-2025 — Projects</title>
+  <style>
+    :root {
+      --bg: #f5f6f4;
+      --surface: #ffffff;
+      --ink: #202420;
+      --muted: #6c736d;
+      --line: #dfe3df;
+      --green: #286c49;
+      --green-soft: #e8f0eb;
+      --green-dark: #194b32;
     }
-
-    .map-container {
-        justify-content: flex-start;
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink);
+      font-family: Inter, "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+      line-height: 1.65;
     }
-
-    aside {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .dpad {
-        display: grid;
-    }
-}
-
-@media(max-width: 600px) {
-    aside {
-        grid-template-columns: 1fr;
-    }
-}
-</style>
+    a { color: inherit; text-decoration: none; }
+    .wrap { width: min(1080px, calc(100% - 40px)); margin: 0 auto; }
+    header { border-bottom: 1px solid var(--line); background: rgba(255,255,255,.78); }
+    .header-inner { min-height: 72px; display: flex; justify-content: space-between; align-items: center; gap: 24px; }
+    .brand { display: flex; align-items: center; gap: 11px; font-weight: 750; letter-spacing: -.025em; }
+    .brand-mark { width: 34px; height: 34px; display:grid; place-items:center; border-radius:9px; background:var(--green); color:white; font-size:18px; }
+    .brand-name { font-size: 16px; }
+    nav { display:flex; gap:24px; align-items:center; color:var(--muted); font-size:14px; }
+    nav a:hover, .text-link:hover { color:var(--green); }
+    .hero { padding: 82px 0 64px; border-bottom:1px solid var(--line); }
+    .kicker { color:var(--green); font-size:12px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; }
+    h1 { font-size:clamp(34px,5vw,58px); line-height:1.18; letter-spacing:-.055em; margin:18px 0 18px; font-weight:800; }
+    .hero p { color:var(--muted); font-size:16px; max-width:590px; margin:0; }
+    .hero-bottom { margin-top:35px; display:flex; align-items:center; gap:12px; color:var(--muted); font-size:13px; }
+    .dot { width:8px; height:8px; border-radius:50%; background:#4b956a; display:inline-block; }
+    main { padding:48px 0 70px; }
+    .section-head { display:flex; align-items:end; justify-content:space-between; gap:20px; margin-bottom:22px; }
+    .section-head h2 { font-size:23px; letter-spacing:-.035em; margin:0; }
+    .section-head span { color:var(--muted); font-size:13px; }
+    .grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:16px; }
+    .card { background:var(--surface); border:1px solid var(--line); border-radius:14px; overflow:hidden; transition:transform .18s, border-color .18s; }
+    .card:hover { transform:translateY(-3px); border-color:#a8c5b3; }
+    .visual { height:158px; display:flex; align-items:center; justify-content:center; background:#eceeeb; color:#303832; border-bottom:1px solid var(--line); font-size:46px; }
+    .visual.game { background:#e7ece8; }
+    .visual.calc { background:#f0f1ef; }
+    .visual.lab { background:#e8f0eb; color:var(--green); }
+    .card-content { padding:20px; }
+    .tag { display:inline-block; padding:3px 8px; border-radius:5px; background:var(--green-soft); color:var(--green-dark); font-size:11px; font-weight:700; margin-bottom:10px; }
+    .card h3 { margin:0 0 8px; font-size:18px; letter-spacing:-.02em; }
+    .card p { margin:0; color:var(--muted); font-size:14px; min-height:48px; }
+    .card-action { display:flex; align-items:center; justify-content:space-between; margin-top:19px; padding-top:14px; border-top:1px solid var(--line); color:var(--green); font-size:13px; font-weight:750; }
+    .arrow { font-size:17px; transition:transform .18s; }
+    .card:hover .arrow { transform:translateX(3px); }
+    .coming .card-action { color:#929892; }
+    .about { margin-top:36px; padding:25px 28px; border:1px solid var(--line); border-radius:14px; background:#fff; display:grid; grid-template-columns:150px 1fr; gap:24px; align-items:center; }
+    .about-label { color:var(--green); font-size:12px; font-weight:800; letter-spacing:.12em; }
+    .about h2 { margin:4px 0 8px; font-size:19px; }
+    .about p { margin:0; color:var(--muted); font-size:14px; }
+    footer { border-top:1px solid var(--line); padding:23px 0; color:var(--muted); font-size:12px; }
+    .footer-inner { display:flex; justify-content:space-between; gap:20px; }
+    @media(max-width:760px) { .grid {grid-template-columns:1fr 1fr;} .about {grid-template-columns:1fr; gap:8px;} .hero {padding:60px 0 48px;} }
+    @media(max-width:520px) { .header-inner {align-items:flex-start; flex-direction:column; padding:16px 0;} nav {width:100%; gap:16px; font-size:13px;} .grid {grid-template-columns:1fr;} .visual {height:135px;} .section-head {align-items:flex-start; flex-direction:column; gap:5px;} .footer-inner {flex-direction:column; gap:4px;} }
+  </style>
 </head>
-
 <body>
-
-<main>
-
-<header>
-    <h1>ROGUE</h1>
-    <small>EMOJI DUNGEON</small>
-</header>
-
-<div class="layout">
-
-<section class="panel">
-    <div class="map-container">
-        <div id="map"></div>
+  <header>
+    <div class="wrap header-inner">
+      <a class="brand" href="./"><span class="brand-mark">H</span><span class="brand-name">HCS-S2A125-2025</span></a>
+      <nav aria-label="サイト内ナビゲーション">
+        <a href="./">Home</a>
+        <a href="#projects">Projects</a>
+        <a href="#about">About</a>
+        <a href="https://github.com/hcs-s2a125-2025" target="_blank" rel="noopener">GitHub ↗</a>
+      </nav>
     </div>
-    <!-- モバイル・マウス操作用コントロールパッド -->
-    <div class="dpad">
-        <button onclick="descend()" title="階段を降りる">🪜</button>
-        <button onclick="move(0,-1)" title="上へ">▲</button>
-        <button onclick="takeTurn()" title="待機">⏳</button>
-        <button onclick="move(-1,0)" title="左へ">◀</button>
-        <button onclick="move(0,1)" title="下へ">▼</button>
-        <button onclick="move(1,0)" title="右へ">▶</button>
+  </header>
+
+  <section class="hero">
+    <div class="wrap">
+      <div class="kicker">Personal projects / Web</div>
+      <h1>つくったものを、<br>ここに。</h1>
+      <p>ゲームや小さなツールなど、個人で制作したWeb作品をまとめています。気軽に触ってみてください。</p>
+      <div class="hero-bottom"><span class="dot"></span>公開中のプロジェクト</div>
     </div>
-</section>
+  </section>
 
-<aside>
+  <main class="wrap">
+    <section id="projects">
+      <div class="section-head">
+        <h2>Projects</h2>
+        <span>公開作品・制作中のもの</span>
+      </div>
+      <div class="grid">
+        <article class="card">
+          <div class="visual game" aria-hidden="true">⚔️</div>
+          <div class="card-content">
+            <span class="tag">GAME · 2 PLAYER</span>
+            <h3>絵文字バトルアリーナ</h3>
+            <p>2人で遊べる対戦アクション。いろいろなキャラクターで勝負しよう。</p>
+            <a class="card-action" href="./games/battle/">プレイする <span class="arrow">↗</span></a>
+          </div>
+        </article>
+        <article class="card">
+          <div class="visual calc" aria-hidden="true">＋ − × ÷</div>
+          <div class="card-content">
+            <span class="tag">TOOL</span>
+            <h3>シンプル電卓</h3>
+            <p>基本的な四則演算ができる、シンプルな電卓。</p>
+            <span class="card-action">準備中 <span>—</span></span>
+          </div>
+        </article>
+        <article class="card coming">
+          <div class="visual lab" aria-hidden="true">◌</div>
+          <div class="card-content">
+            <span class="tag">EXPERIMENT</span>
+            <h3>実験・試作</h3>
+            <p>アイデアの試作や、小さな実験プロジェクトを掲載予定。</p>
+            <span class="card-action">Coming soon <span>—</span></span>
+          </div>
+        </article>
+      </div>
+    </section>
 
-<section class="panel stats">
-    <div class="stat">
-        <span>LEVEL</span>
-        <b id="depth">1</b>
+    <section id="about" class="about">
+      <div class="about-label">ABOUT THIS SITE</div>
+      <div>
+        <h2>制作物の置き場所</h2>
+        <p>制作したWebページやツールを公開・整理するためのサイトです。内容は少しずつ追加・更新していきます。</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-inner">
+      <span>© HCS-S2A125-2025</span>
+      <span>Hosted on GitHub Pages</span>
     </div>
-
-    <div class="stat">
-        <span>GOLD</span>
-        <b id="gold">0</b>
-    </div>
-
-    <div class="stat">
-        <span>HP</span>
-        <b id="hp">20 / 20</b>
-    </div>
-
-    <div class="stat">
-        <span>ATTACK</span>
-        <b id="atk">3</b>
-    </div>
-
-    <div class="stat">
-        <span>EXP</span>
-        <b id="xp">0</b>
-    </div>
-
-    <div class="stat">
-        <span>TURNS</span>
-        <b id="turns">0</b>
-    </div>
-</section>
-
-<section class="panel">
-    <div style="color:#718671;font-size:11px">
-        ADVENTURE LOG
-    </div>
-    <div id="log"></div>
-</section>
-
-<section class="panel controls">
-    <b>移動</b>：矢印 / WASD / HJKL<br>
-    <b>待機</b>：Space<br>
-    <b>階段</b>：Enter<br>
-    <b>再スタート</b>：R
-
-    <!-- 絵文字凡例 -->
-    <div class="legend-grid">
-        <div class="legend-item"><span class="legend-icon">🧙‍♂️</span>プレイヤー</div>
-        <div class="legend-item"><span class="legend-icon">🧱</span>壁</div>
-        <div class="legend-item"><span class="legend-icon tile-floor">・</span>床</div>
-        <div class="legend-item"><span class="legend-icon">🪜</span>階段</div>
-        <div class="legend-item"><span class="legend-icon">💰</span>金貨</div>
-        <div class="legend-item"><span class="legend-icon">🧪</span>回復薬</div>
-        <div class="legend-item"><span class="legend-icon">💀</span>コボルト</div>
-        <div class="legend-item"><span class="legend-icon">👻</span>オーク</div>
-        <div class="legend-item"><span class="legend-icon">🪬</span>コウモリ</div>
-        <div class="legend-item"><span class="legend-icon">🧌</span>トロール</div>
-    </div>
-
-    <button onclick="restart()">NEW GAME</button>
-</section>
-
-</aside>
-</div>
-</main>
-
-<div id="overlay">
-    <div class="modal">
-        <h2 id="ovtitle">GAME OVER</h2>
-        <p id="ovtext"></p>
-        <button onclick="restart()">PLAY AGAIN</button>
-    </div>
-</div>
-
-<script>
-const W = 56;
-const H = 27;
-
-// 絵文字マッピング定義
-const EMOJI = {
-    player: "🧙‍♂️",
-    wall: "🧱",
-    floor: "・",
-    stairs: "🪜",
-    gold: "💰",
-    potion: "🧪",
-    kobold: "💀",
-    orc: "👻",
-    bat: "🪬",
-    troll: "🧌"
-};
-
-let map;
-let rooms;
-let player;
-let monsters;
-let items;
-let depth;
-let gold;
-let xp;
-let turns;
-let gameover;
-let seen;
-
-const rand = (a, b) =>
-    Math.floor(Math.random() * (b - a + 1)) + a;
-
-const el = id => document.getElementById(id);
-
-// ログ出力
-function log(text) {
-    el("log").innerHTML =
-        `<div class="logline">${text}</div>` +
-        el("log").innerHTML;
-}
-
-// マップ初期化（preservePlayerStatsがtrueの場合は階層移動としてステータスを引き継ぐ）
-function createMap(preservePlayerStats = false) {
-    map = Array.from(
-        { length: H },
-        () => Array(W).fill("#")
-    );
-
-    seen = Array.from(
-        { length: H },
-        () => Array(W).fill(false)
-    );
-
-    rooms = [];
-    monsters = [];
-    items = [];
-
-    // 部屋生成
-    for (let attempt = 0; attempt < 100; attempt++) {
-        if (rooms.length >= 8) break;
-
-        let rw = rand(5, 10);
-        let rh = rand(4, 7);
-
-        let rx = rand(1, W - rw - 2);
-        let ry = rand(1, H - rh - 2);
-
-        let room = {
-            x: rx,
-            y: ry,
-            w: rw,
-            h: rh,
-            cx: rx + Math.floor(rw / 2),
-            cy: ry + Math.floor(rh / 2)
-        };
-
-        // 部屋同士の重なり判定
-        let overlap = rooms.some(r =>
-            rx < r.x + r.w + 1 &&
-            rx + rw + 1 > r.x &&
-            ry < r.y + r.h + 1 &&
-            ry + rh + 1 > r.y
-        );
-
-        if (overlap) continue;
-
-        // 床を配置
-        for (let y = ry; y < ry + rh; y++) {
-            for (let x = rx; x < rx + rw; x++) {
-                map[y][x] = ".";
-            }
-        }
-
-        // 通路を接続
-        if (rooms.length > 0) {
-            let prev = rooms[rooms.length - 1];
-
-            if (Math.random() < 0.5) {
-                horizontalTunnel(prev.cx, room.cx, prev.cy);
-                verticalTunnel(prev.cy, room.cy, room.cx);
-            } else {
-                verticalTunnel(prev.cy, room.cy, prev.cx);
-                horizontalTunnel(prev.cx, room.cx, room.cy);
-            }
-        }
-
-        rooms.push(room);
-    }
-
-    // 部屋が2つ未満なら再生成
-    if (rooms.length < 2) {
-        createMap(preservePlayerStats);
-        return;
-    }
-
-    // プレイヤー配置（新規スタート時は初期化、階層移動時は位置のみ更新）
-    if (preservePlayerStats && player) {
-        player.x = rooms[0].cx;
-        player.y = rooms[0].cy;
-    } else {
-        player = {
-            x: rooms[0].cx,
-            y: rooms[0].cy,
-            hp: 20,
-            maxhp: 20,
-            atk: 3
-        };
-    }
-
-    // 階段を最後の部屋に配置
-    const last = rooms[rooms.length - 1];
-    map[last.cy][last.cx] = ">";
-
-    // 敵・アイテム配置
-    for (let i = 1; i < rooms.length; i++) {
-        let room = rooms[i];
-
-        if (Math.random() < 0.75) {
-            let p = randomRoomPosition(room);
-            monsters.push(createMonster(p.x, p.y));
-        }
-
-        if (Math.random() < 0.7) {
-            let p = randomRoomPosition(room);
-            items.push({
-                x: p.x,
-                y: p.y,
-                type: Math.random() < 0.7 ? "gold" : "potion",
-                value: rand(5, 15)
-            });
-        }
-    }
-}
-
-// 横通路
-function horizontalTunnel(x1, x2, y) {
-    for (let x = Math.min(x1, x2); x <= Math.max(x1, x2); x++) {
-        map[y][x] = ".";
-    }
-}
-
-// 縦通路
-function verticalTunnel(y1, y2, x) {
-    for (let y = Math.min(y1, y2); y <= Math.max(y1, y2); y++) {
-        map[y][x] = ".";
-    }
-}
-
-// 部屋内の空き座標を取得
-function randomRoomPosition(room) {
-    let x, y;
-
-    do {
-        x = rand(room.x, room.x + room.w - 1);
-        y = rand(room.y, room.y + room.h - 1);
-    } while (
-        (x === player.x && y === player.y) ||
-        monsterAt(x, y) ||
-        itemAt(x, y) ||
-        map[y][x] === ">"
-    );
-
-    return { x, y };
-}
-
-// モンスター生成（絵文字割り当て）
-function createMonster(x, y) {
-    const types = [
-        [EMOJI.kobold, "Kobold", 5, 1],
-        [EMOJI.orc, "Orc", 8, 2],
-        [EMOJI.bat, "Bat", 4, 1],
-        [EMOJI.troll, "Troll", 12, 3]
-    ];
-
-    let t = types[rand(0, types.length - 1)];
-
-    return {
-        x: x,
-        y: y,
-        emoji: t[0],
-        name: t[1],
-        hp: t[2],
-        atk: t[3]
-    };
-}
-
-// 敵検索
-function monsterAt(x, y) {
-    return monsters.find(m => m.x === x && m.y === y);
-}
-
-// アイテム検索
-function itemAt(x, y) {
-    return items.find(i => i.x === x && i.y === y);
-}
-
-// 攻撃処理
-function attack(monster) {
-    let damage = rand(1, player.atk);
-    monster.hp -= damage;
-
-    log(`${EMOJI.player} You hit ${monster.emoji} ${monster.name} for ${damage} damage.`);
-
-    if (monster.hp <= 0) {
-        log(`${monster.emoji} ${monster.name} defeated!`);
-
-        xp += 3;
-        gold += rand(0, 3);
-
-        monsters = monsters.filter(m => m !== monster);
-
-        // レベルアップ
-        if (xp >= 10) {
-            xp -= 10;
-            player.atk++;
-            player.maxhp += 3;
-            player.hp = Math.min(player.maxhp, player.hp + 3);
-
-            log("✨ LEVEL UP! Attack & Max HP increased!");
-        }
-    }
-}
-
-// プレイヤー移動
-function move(dx, dy) {
-    if (gameover) return;
-
-    let nx = player.x + dx;
-    let ny = player.y + dy;
-
-    if (nx < 0 || ny < 0 || nx >= W || ny >= H) return;
-
-    // 敵がいる場合は攻撃
-    let monster = monsterAt(nx, ny);
-    if (monster) {
-        attack(monster);
-        takeTurn();
-        return;
-    }
-
-    // 壁には移動できない
-    if (map[ny][nx] !== "." && map[ny][nx] !== ">") {
-        return;
-    }
-
-    player.x = nx;
-    player.y = ny;
-
-    // アイテム取得
-    let item = itemAt(nx, ny);
-    if (item) {
-        if (item.type === "gold") {
-            gold += item.value;
-            log(`${EMOJI.gold} You found ${item.value} gold!`);
-        } else {
-            player.hp = Math.min(player.maxhp, player.hp + 8);
-            log(`${EMOJI.potion} You drink a potion. +8 HP`);
-        }
-
-        items = items.filter(i => i !== item);
-    }
-
-    takeTurn();
-}
-
-// モンスター行動ターン
-function takeTurn() {
-    if (gameover) return;
-
-    turns++;
-
-    for (let m of [...monsters]) {
-        let distance =
-            Math.abs(m.x - player.x) +
-            Math.abs(m.y - player.y);
-
-        // 隣接していれば攻撃
-        if (distance === 1) {
-            let damage = rand(1, m.atk);
-            player.hp -= damage;
-
-            log(`${m.emoji} ${m.name} hits you for ${damage}.`);
-
-            if (player.hp <= 0) {
-                player.hp = 0;
-                render();
-                endGame();
-                return;
-            }
-        } else {
-            // プレイヤーを追跡
-            if (Math.random() < 0.65) {
-                let dx = player.x - m.x;
-                let dy = player.y - m.y;
-
-                if (Math.abs(dx) > Math.abs(dy)) {
-                    dy = 0;
-                } else {
-                    dx = 0;
-                }
-
-                dx = Math.sign(dx);
-                dy = Math.sign(dy);
-
-                let nx = m.x + dx;
-                let ny = m.y + dy;
-
-                if (
-                    map[ny]?.[nx] === "." &&
-                    !monsterAt(nx, ny) &&
-                    !(nx === player.x && ny === player.y)
-                ) {
-                    m.x = nx;
-                    m.y = ny;
-                }
-            }
-        }
-    }
-
-    render();
-}
-
-// 階段を降りる
-function descend() {
-    if (gameover) return;
-
-    if (map[player.y][player.x] !== ">") {
-        log("There are no stairs here.");
-        return;
-    }
-
-    depth++;
-    player.hp = Math.min(player.maxhp, player.hp + 5);
-
-    createMap(true);
-
-    log(`${EMOJI.stairs} You descend to level ${depth}.`);
-
-    render();
-}
-
-// ゲームオーバー処理
-function endGame() {
-    gameover = true;
-
-    el("ovtitle").textContent = "💀 GAME OVER";
-    el("ovtext").textContent =
-        `Level ${depth} / Turns ${turns} / Gold ${gold}`;
-
-    el("overlay").style.display = "flex";
-}
-
-// 絵文字グリッド描画
-function render() {
-    const mapEl = el("map");
-    const fragment = document.createDocumentFragment();
-
-    for (let y = 0; y < H; y++) {
-        for (let x = 0; x < W; x++) {
-            const tile = document.createElement("div");
-            tile.className = "tile";
-
-            let distance =
-                Math.abs(x - player.x) +
-                Math.abs(y - player.y);
-
-            // 視界判定（マンハッタン距離8以内）
-            const inSight = distance <= 8;
-            if (inSight) {
-                seen[y][x] = true;
-            }
-
-            // 未探索の闇
-            if (!seen[y][x]) {
-                fragment.appendChild(tile);
-                continue;
-            }
-
-            // 探索済みだが現在視界外の場合は薄暗く表示
-            if (!inSight) {
-                tile.classList.add("tile-dim");
-            }
-
-            const base = map[y][x];
-            let content = "";
-
-            if (base === "#") {
-                content = EMOJI.wall;
-            } else if (base === ">") {
-                tile.classList.add("tile-floor");
-                content = EMOJI.stairs;
-            } else {
-                tile.classList.add("tile-floor");
-                content = EMOJI.floor;
-            }
-
-            // 視界内のみアイテムとモンスターを表示
-            if (inSight) {
-                let item = itemAt(x, y);
-                if (item) {
-                    content = item.type === "gold" ? EMOJI.gold : EMOJI.potion;
-                }
-
-                let monster = monsterAt(x, y);
-                if (monster) {
-                    content = monster.emoji;
-                }
-            }
-
-            // プレイヤー描画
-            if (x === player.x && y === player.y) {
-                content = EMOJI.player;
-                tile.classList.add("tile-player");
-            }
-
-            tile.textContent = content;
-            fragment.appendChild(tile);
-        }
-    }
-
-    mapEl.innerHTML = "";
-    mapEl.appendChild(fragment);
-
-    // ステータス更新
-    el("depth").textContent = depth;
-    el("gold").textContent = gold;
-    el("hp").textContent = `${player.hp} / ${player.maxhp}`;
-    el("atk").textContent = player.atk;
-    el("xp").textContent = xp;
-    el("turns").textContent = turns;
-}
-
-// ゲーム再スタート
-function restart() {
-    depth = 1;
-    gold = 0;
-    xp = 0;
-    turns = 0;
-    gameover = false;
-
-    el("overlay").style.display = "none";
-    el("log").innerHTML = "";
-
-    createMap(false);
-
-    log(`${EMOJI.player} Welcome to the dungeon.`);
-    log(`${EMOJI.stairs} Find the stairs and survive.`);
-
-    render();
-}
-
-// キーボード操作イベント
-document.addEventListener("keydown", function(e) {
-    let key = e.key.toLowerCase();
-
-    const controls = {
-        "arrowup": [0, -1],
-        "w": [0, -1],
-        "k": [0, -1],
-
-        "arrowdown": [0, 1],
-        "s": [0, 1],
-        "j": [0, 1],
-
-        "arrowleft": [-1, 0],
-        "a": [-1, 0],
-        "h": [-1, 0],
-
-        "arrowright": [1, 0],
-        "d": [1, 0],
-        "l": [1, 0]
-    };
-
-    if (controls[key]) {
-        e.preventDefault();
-        move(...controls[key]);
-    } else if (key === " ") {
-        e.preventDefault();
-        takeTurn();
-    } else if (key === "enter") {
-        e.preventDefault();
-        descend();
-    } else if (key === "r") {
-        restart();
-    }
-});
-
-restart();
-</script>
-
+  </footer>
 </body>
 </html>
