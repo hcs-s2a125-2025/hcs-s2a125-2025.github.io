@@ -64,16 +64,20 @@ const toStageBtn = document.getElementById("toStageBtn");
 // アシスト設定UI
 const p1AutoFireEl = document.getElementById("p1AutoFire");
 const p1AutoAimEl = document.getElementById("p1AutoAim");
+const p1FullAutoEl = document.getElementById("p1FullAuto");
 const p2AutoFireEl = document.getElementById("p2AutoFire");
 const p2AutoAimEl = document.getElementById("p2AutoAim");
+const p2FullAutoEl = document.getElementById("p2FullAuto");
 const pauseP1AutoFireEl = document.getElementById("pauseP1AutoFire");
 const pauseP1AutoAimEl = document.getElementById("pauseP1AutoAim");
+const pauseP1FullAutoEl = document.getElementById("pauseP1FullAuto");
 const pauseP2AutoFireEl = document.getElementById("pauseP2AutoFire");
 const pauseP2AutoAimEl = document.getElementById("pauseP2AutoAim");
+const pauseP2FullAutoEl = document.getElementById("pauseP2FullAuto");
 
 const assistOptions = {
-  p1: { autoFire: false, autoAim: false },
-  p2: { autoFire: false, autoAim: false }
+  p1: { autoFire: false, autoAim: false, fullAuto: false },
+  p2: { autoFire: false, autoAim: false, fullAuto: false }
 };
 
 function syncAssistUI() {
@@ -81,11 +85,15 @@ function syncAssistUI() {
   pauseP1AutoFireEl.checked = assistOptions.p1.autoFire;
   p1AutoAimEl.checked = assistOptions.p1.autoAim;
   pauseP1AutoAimEl.checked = assistOptions.p1.autoAim;
+  p1FullAutoEl.checked = assistOptions.p1.fullAuto;
+  pauseP1FullAutoEl.checked = assistOptions.p1.fullAuto;
 
   p2AutoFireEl.checked = assistOptions.p2.autoFire;
   pauseP2AutoFireEl.checked = assistOptions.p2.autoFire;
   p2AutoAimEl.checked = assistOptions.p2.autoAim;
   pauseP2AutoAimEl.checked = assistOptions.p2.autoAim;
+  p2FullAutoEl.checked = assistOptions.p2.fullAuto;
+  pauseP2FullAutoEl.checked = assistOptions.p2.fullAuto;
   if (screenMode === "battle") updateHud();
 }
 
@@ -93,12 +101,15 @@ p1AutoFireEl.addEventListener("change", (e) => { assistOptions.p1.autoFire = e.t
 pauseP1AutoFireEl.addEventListener("change", (e) => { assistOptions.p1.autoFire = e.target.checked; syncAssistUI(); });
 p1AutoAimEl.addEventListener("change", (e) => { assistOptions.p1.autoAim = e.target.checked; syncAssistUI(); });
 pauseP1AutoAimEl.addEventListener("change", (e) => { assistOptions.p1.autoAim = e.target.checked; syncAssistUI(); });
+p1FullAutoEl.addEventListener("change", (e) => { assistOptions.p1.fullAuto = e.target.checked; syncAssistUI(); });
+pauseP1FullAutoEl.addEventListener("change", (e) => { assistOptions.p1.fullAuto = e.target.checked; syncAssistUI(); });
 
 p2AutoFireEl.addEventListener("change", (e) => { assistOptions.p2.autoFire = e.target.checked; syncAssistUI(); });
 pauseP2AutoFireEl.addEventListener("change", (e) => { assistOptions.p2.autoFire = e.target.checked; syncAssistUI(); });
 p2AutoAimEl.addEventListener("change", (e) => { assistOptions.p2.autoAim = e.target.checked; syncAssistUI(); });
 pauseP2AutoAimEl.addEventListener("change", (e) => { assistOptions.p2.autoAim = e.target.checked; syncAssistUI(); });
-
+p2FullAutoEl.addEventListener("change", (e) => { assistOptions.p2.fullAuto = e.target.checked; syncAssistUI(); });
+pauseP2FullAutoEl.addEventListener("change", (e) => { assistOptions.p2.fullAuto = e.target.checked; syncAssistUI(); });
 let selectedStageIndex = 0;
 let selectedP1 = "🤯";
 let selectedP2 = "💩";
@@ -410,6 +421,7 @@ function startBattle() {
   updateHud();
 }
 
+
 function startNewSeries() {
   scores.p1 = 0;
   scores.p2 = 0;
@@ -527,8 +539,8 @@ function updateHud() {
   };
   const assistBadge = (pid) => {
     const opt = assistOptions[pid];
-    if (!opt.autoFire && !opt.autoAim) return "";
-    const label = (opt.autoFire ? "🔄" : "") + (opt.autoAim ? "🎯" : "");
+    if (!opt.autoFire && !opt.autoAim && !opt.fullAuto) return "";
+    const label = (opt.autoFire ? "🔄" : "") + (opt.autoAim ? "🎯" : "") + (opt.fullAuto ? "⚡" : "");
     return `<span class="assist-pill" title="アシスト有効">${label}</span>`;
   };
   const hearts = (f) => `<span class="hp-hearts">${"♥".repeat(Math.max(0, f.hp))}${"♡".repeat(Math.max(0, MAX_HP - f.hp))}</span>`;
@@ -1265,7 +1277,7 @@ function hitFighter(target, attackerCenterX, baseKnockVx = 340, chillDuration = 
 }
 
 function stepFighter(f, input, dt, platforms) {
-  const assist = assistOptions[f.id] || { autoFire: false, autoAim: false };
+  const assist = assistOptions[f.id] || { autoFire: false, autoAim: false, fullAuto: false };
   const opponent = fighters.find((other) => other.id !== f.id);
 
   if (f.invincibleTimer > 0) f.invincibleTimer = Math.max(0, f.invincibleTimer - dt);
@@ -1368,12 +1380,15 @@ function stepFighter(f, input, dt, platforms) {
     f.specialCooldown = Math.max(0, f.specialCooldown - dt);
   }
 
-  // 攻撃チャージ＆オートチャージ連射アシスト
-  if (input.pulseHeld && f.pulseCooldown <= 0 && f.mindChargeTimer <= 0) {
+  // 攻撃チャージ＆オートチャージ連射＆フルオート攻撃アシスト
+  const effectivePulseHeld = input.pulseHeld || assist.fullAuto;
+
+  if (effectivePulseHeld && f.pulseCooldown <= 0 && f.mindChargeTimer <= 0) {
     f.isChargingPulse = true;
     f.pulseChargeTime = Math.min(MAX_CHARGE_TIME, f.pulseChargeTime + dt);
 
-    if (assist.autoFire && f.pulseChargeTime >= MAX_CHARGE_TIME) {
+    // オートチャージ連射 または フルオート攻撃時は最大チャージで自動発射
+    if ((assist.autoFire || assist.fullAuto) && f.pulseChargeTime >= MAX_CHARGE_TIME) {
       triggerPulse(f, 1.0);
       f.isChargingPulse = false;
       f.pulseChargeTime = 0;
@@ -1390,12 +1405,13 @@ function stepFighter(f, input, dt, platforms) {
     f.pulseChargeTime = 0;
   }
 
-  if (!input.pulseHeld && f.isChargingPulse) {
+  if (!effectivePulseHeld && f.isChargingPulse) {
     f.isChargingPulse = false;
     f.pulseChargeTime = 0;
   }
 
-  if (input.specialPressed) {
+  // 特殊技の発動（手動ボタン または フルオート攻撃時かつクールタイム完了）
+  if (input.specialPressed || (assist.fullAuto && f.specialCooldown <= 0 && !isSpecialActive(f))) {
     input.specialPressed = false;
     triggerSpecialAction(f);
   }
@@ -1435,8 +1451,8 @@ function stepFighter(f, input, dt, platforms) {
       }
     }
 
-    // オート振り向きアシスト
-    if (assist.autoAim && opponent && f.hp > 0) {
+    // オート振り向きアシスト（フルオート攻撃時も自動追尾）
+    if ((assist.autoAim || assist.fullAuto) && opponent && f.hp > 0) {
       const myCenter = f.x + f.w / 2;
       const opCenter = opponent.x + opponent.w / 2;
       if (Math.abs(opCenter - myCenter) > 4) {
