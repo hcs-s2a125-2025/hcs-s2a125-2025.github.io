@@ -1,10 +1,15 @@
+---
+---
+{% assign build_revision = site.github.build_revision | default: "unknown" %}
+{% assign build_short = build_revision | slice: 0, 7 %}
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>絵文字バトルアリーナ</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <meta name="build-revision" content="{{ build_revision }}" />
+  <link rel="stylesheet" href="css/style.css?v={{ build_short }}" />
 </head>
 <body>
   <div class="header">
@@ -15,6 +20,9 @@
       <kbd>P</kbd>ポーズ <kbd>R</kbd>再戦
     </div>
     <div class="hdr-right">
+      <a class="build-info" href="https://github.com/hcs-s2a125-2025/hcs-s2a125-2025.github.io/actions" target="_blank" rel="noopener noreferrer" title="この画面のビルドID。クリックするとGitHub Actionsの公開履歴を開きます">
+        <span>BUILD</span><code>{{ build_short }}</code>
+      </a>
       <button class="hdr-btn" id="pauseBtn" type="button" title="ポーズ (P)">⏸</button>
       <button class="hdr-btn" id="soundBtn" type="button" title="サウンド ON/OFF (M)">🔊</button>
     </div>
@@ -171,8 +179,8 @@
   </div>
 
   <!-- 設定データ → サウンド → メインロジックの順に読み込み -->
-  <script src="js/data.js"></script>
-  <script src="js/sound.js"></script>
-  <script src="js/game.js"></script>
+  <script src="js/data.js?v={{ build_short }}"></script>
+  <script src="js/sound.js?v={{ build_short }}"></script>
+  <script src="js/game.js?v={{ build_short }}"></script>
 </body>
 </html>
