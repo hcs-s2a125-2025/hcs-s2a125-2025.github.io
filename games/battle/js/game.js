@@ -1265,7 +1265,7 @@ function triggerSpecialAction(fighter) {
     fighter.hoverTimer = 0.62;
     fighter.vy = -210;
     spawnPopup(cx, cy - 28, "🤖 MISSILE LOCK!", "#72efdd");
-    const angles = [0.08, 0.25, 0.42, 0.59];
+    const angles = [0.28, 0.48, 0.68, 0.88]; // 前方から斜め下へ広がる4発
     angles.forEach((ang, idx) => {
       const speed = 570 + idx * 30;
       pulses.push({
@@ -1908,6 +1908,25 @@ function update(dt) {
       if (pl.style === "brain_spark" && Math.random() < 0.55) {
         spawnParticles(pl.x, pl.y, 1, "#ff9f1c");
       }
+      if (pl.style === "mystic_eye" && Math.random() < 0.45) {
+        spawnParticles(pl.x, pl.y, 1, "#4cc9f0");
+      }
+      if (pl.style === "plasma_bolt" && Math.random() < 0.7) {
+        spawnParticles(pl.x, pl.y, 1, "#72efdd");
+      }
+      if (pl.style === "mecha_missile" && Math.random() < 0.85) {
+        spawnParticles(pl.x - pl.dir * pl.radius, pl.y, 2, "#ffd166");
+      }
+      if (pl.style === "party_popper" && Math.random() < 0.65) {
+        const colors = ["#ff5c8a", "#ffd166", "#72efdd", "#c77dff"];
+        spawnParticles(pl.x, pl.y, 1, colors[Math.floor(Math.random() * colors.length)]);
+      }
+      if (pl.style === "bounce_ball" && Math.random() < 0.55) {
+        spawnParticles(pl.x, pl.y + pl.radius, 1, pl.color);
+      }
+      if (pl.style === "mystic_reflect" && Math.random() < 0.8) {
+        spawnParticles(pl.x, pl.y, 1, "#4cc9f0");
+      }
 
       let hitWall = false;
       for (const p of stage.platforms) {
@@ -1981,6 +2000,12 @@ function update(dt) {
             hitIds: new Set()
           });
           spawnParticles(pl.x, GROUND_Y, 10, "#b08968");
+        } else if (pl.style === "bounce_ball") {
+          spawnParticles(pl.x, GROUND_Y, 12, pl.color);
+          spawnParticles(pl.x, GROUND_Y, 5, "#ffd166");
+        } else if (pl.style === "mecha_missile") {
+          spawnParticles(pl.x, GROUND_Y, 12, "#ff9f1c");
+          spawnParticles(pl.x, GROUND_Y, 6, "#ff5c8a");
         } else {
           spawnParticles(pl.x, GROUND_Y, 6, pl.color);
         }
@@ -2028,6 +2053,22 @@ function update(dt) {
                 hitIds: new Set([target.id])
               });
               spawnParticles(pl.x, pl.y, 12, "#b08968");
+            } else if (pl.style === "mecha_missile") {
+              shockwaves.push({
+                ownerId: pl.ownerId, x: pl.x, y: pl.y,
+                maxRadius: 38, radius: 8, life: 0.16, maxLife: 0.16,
+                color: "#ff9f1c", knockVx: 300, hitIds: new Set([target.id])
+              });
+              spawnParticles(pl.x, pl.y, 14, "#ff9f1c");
+              spawnParticles(pl.x, pl.y, 8, "#ff5c8a");
+            } else if (pl.style === "bounce_ball") {
+              spawnParticles(pl.x, pl.y, 16, pl.color);
+              spawnParticles(pl.x, pl.y, 8, "#ffd166");
+            } else if (pl.style === "party_popper") {
+              spawnParticles(pl.x, pl.y, 18, "#ff5c8a");
+              spawnParticles(pl.x, pl.y, 10, "#ffd166");
+            } else if (pl.style === "mystic_eye" || pl.style === "mystic_reflect") {
+              spawnParticles(pl.x, pl.y, 14, "#4cc9f0");
             }
             pulses.splice(i, 1);
           }
@@ -2046,7 +2087,24 @@ function update(dt) {
         for (let j = pulses.length - 1; j >= 0; j--) {
           const pl = pulses[j];
           if (pl.ownerId !== hz.ownerId && Math.hypot(pl.x - hz.x, pl.y - hz.y) <= hz.radius + pl.radius) {
+            // 吸収した弾をオーブの所有者へ向けて返す（最大3発）
             spawnParticles(pl.x, pl.y, 10, "#4cc9f0");
+            if ((hz.reflectedCount || 0) < 3) {
+              hz.reflectedCount = (hz.reflectedCount || 0) + 1;
+              const source = fighters.find((f) => f.id === pl.ownerId);
+              const targetX = source ? source.x + source.w / 2 : pl.x - pl.vx;
+              const targetY = source ? source.y + source.h / 2 : pl.y;
+              const angle = Math.atan2(targetY - hz.y, targetX - hz.x);
+              pulses.push({
+                ownerId: hz.ownerId, playerColor: "#4cc9f0",
+                style: "mystic_reflect", x: hz.x, y: hz.y,
+                vx: Math.cos(angle) * 560, vy: Math.sin(angle) * 560,
+                dir: Math.cos(angle) >= 0 ? 1 : -1,
+                radius: 13, knockVx: 460, life: 0.72, maxLife: 0.72,
+                age: 0, color: "#4cc9f0"
+              });
+              spawnPopup(hz.x, hz.y - 20, "REFLECT!", "#4cc9f0");
+            }
             pulses.splice(j, 1);
           }
         }
@@ -3146,6 +3204,36 @@ function drawPulsesAndParticles() {
       ctx.fill(); ctx.stroke();
       ctx.fillStyle = "#72efdd"; ctx.fillRect(r * 0.2, -r * 0.55, 4, 4);
       ctx.fillStyle = "#ffd166"; ctx.fillRect(r * 0.45, r * 0.25, 4, 4);
+
+    } else if (pl.style === "bounce_ball") {
+      // 風船本体、結び目、揺れるひもを描画
+      const r = pl.radius * 0.9;
+      ctx.fillStyle = pl.color || "#ff5c8a";
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.ellipse(0, -r * 0.12, r * 0.72, r, Math.sin((pl.age || 0) * 8) * 0.12, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, r * 0.82); ctx.lineTo(-r * 0.16, r * 1.05); ctx.lineTo(r * 0.16, r * 1.05;
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = pl.color || "#ff5c8a";
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(0, r * 1.05);
+      ctx.quadraticCurveTo(Math.sin((pl.age || 0) * 10) * r * 0.35, r * 1.45, Math.sin((pl.age || 0) * 7) * r * 0.18, r * 1.75);
+      ctx.stroke();
+      ctx.fillStyle = "rgba(255,255,255,0.75)";
+      ctx.beginPath(); ctx.ellipse(-r * 0.24, -r * 0.38, r * 0.16, r * 0.28, -0.25, 0, Math.PI * 2); ctx.fill();
+
+    } else if (pl.style === "mystic_reflect") {
+      ctx.rotate(angle);
+      const r = pl.radius;
+      ctx.strokeStyle = "#4cc9f0"; ctx.lineWidth = 3;
+      ctx.fillStyle = "rgba(76,201,240,0.25)";
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath(); ctx.arc(r * 0.2, 0, r * 0.28, 0, Math.PI * 2); ctx.fill();
 
     } else {
       ctx.rotate(angle);
