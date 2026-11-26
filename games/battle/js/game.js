@@ -3215,7 +3215,7 @@ function drawPulsesAndParticles() {
       ctx.ellipse(0, -r * 0.12, r * 0.72, r, Math.sin((pl.age || 0) * 8) * 0.12, 0, Math.PI * 2);
       ctx.fill(); ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(0, r * 0.82); ctx.lineTo(-r * 0.16, r * 1.05); ctx.lineTo(r * 0.16, r * 1.05;
+      ctx.moveTo(0, r * 0.82); ctx.lineTo(-r * 0.16, r * 1.05); ctx.lineTo(r * 0.16, r * 1.05);
       ctx.closePath(); ctx.fill();
       ctx.strokeStyle = pl.color || "#ff5c8a";
       ctx.lineWidth = 1.4;
