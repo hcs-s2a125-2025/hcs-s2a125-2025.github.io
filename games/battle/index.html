@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>絵文字バトルアリーナ（1P WASD+Space+Q vs 2P 矢印+左右クリック）</title>
+  <title>絵文字バトルアリーナ</title>
   <style>
     * {
       box-sizing: border-box;
@@ -447,6 +447,40 @@
       justify-content: center;
     }
 
+    .controls-hint { flex: 1; min-width: 0; text-align: center; font-size: 0.68rem; }
+    .controls-hint kbd { padding: 0 3px; margin: 0 1px; }
+    .hdr-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .hdr-btn {
+      background: #1b1638; border: 1px solid #5944a6; color: #ffd166;
+      border-radius: 8px; padding: 2px 9px; font-size: 0.82rem; cursor: pointer;
+    }
+    .hdr-btn:hover { background: #2a2158; }
+
+    .stage-hud-pill { min-width: 200px; text-align: center; font-variant-numeric: tabular-nums; }
+    .stage-hud-pill.warn { border-color: #ff5c8a; color: #ff5c8a; animation: hudBlink 0.6s steps(2) infinite; }
+    @keyframes hudBlink { 50% { opacity: 0.55; } }
+    .wins { color: #ffd166; font-size: 0.8rem; }
+    .sp-badge.cd {
+      background: linear-gradient(90deg, rgba(114, 239, 221, 0.3) var(--p, 0%), rgba(120, 125, 160, 0.2) var(--p, 0%));
+    }
+
+    .stat-bars { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; width: 100%; }
+    .stat-item { font-size: 0.64rem; color: #aebad9; text-align: center; }
+    .stat-track { height: 5px; border-radius: 99px; background: rgba(255, 255, 255, 0.13); margin-top: 3px; overflow: hidden; }
+    .stat-fill { height: 100%; border-radius: 99px; transition: width 0.25s ease; }
+    .p1 .stat-fill { background: #72efdd; }
+    .p2 .stat-fill { background: #ff70a6; }
+    .mini-btn {
+      background: rgba(12, 9, 28, 0.9); color: #e4ecff; border: 1.5px solid rgba(255, 255, 255, 0.28);
+      border-radius: 8px; padding: 1px 8px; font-size: 0.78rem; cursor: pointer;
+    }
+    .mini-btn:hover { background: #362c69; }
+    .nav-hint { font-size: 0.72rem; color: #8f9bc0; }
+    .result-sub { font-size: 1.05rem; color: #c2cde8; }
+    .result-overlay h2 { text-shadow: 0 0 18px rgba(255, 209, 102, 0.5); }
+    .result-overlay { z-index: 5; }
+    .pause-overlay h2 { color: #72efdd; letter-spacing: 0.2em; }
+
     @media (max-width: 780px) {
       .stage-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -460,10 +494,14 @@
 <body>
   <div class="header">
     <h1>⚔️ 絵文字バトルアリーナ</h1>
-    <div class="controls-hint">
-      <strong>1P</strong>: <kbd>A</kbd><kbd>D</kbd>移動 <kbd>W</kbd>/<kbd>Space</kbd>ジャンプ <kbd>S</kbd>長押し攻撃 <kbd>Q</kbd>特殊 ／ 
-      <strong>2P</strong>: <kbd>←</kbd><kbd>→</kbd>移動 <kbd>↑</kbd>/<kbd>右Click</kbd>ジャンプ <kbd>↓</kbd>長押し攻撃 <kbd>左Click</kbd>特殊 ／ 
-      <kbd>R</kbd> 再戦
+    <div class="controls-hint" title="操作説明">
+      <strong>1P</strong>: <kbd>A</kbd><kbd>D</kbd>移動 <kbd>W</kbd>/<kbd>Space</kbd>跳 <kbd>S</kbd>長押し攻撃 <kbd>Q</kbd>特殊 ／
+      <strong>2P</strong>: <kbd>←</kbd><kbd>→</kbd>移動 <kbd>↑</kbd>/<kbd>右Click</kbd>跳 <kbd>↓</kbd>長押し攻撃 <kbd>左Click</kbd>/<kbd>Enter</kbd>特殊 ／
+      <kbd>P</kbd>ポーズ <kbd>R</kbd>再戦
+    </div>
+    <div class="hdr-right">
+      <button class="hdr-btn" id="pauseBtn" type="button" title="ポーズ (P)">⏸</button>
+      <button class="hdr-btn" id="soundBtn" type="button" title="サウンド ON/OFF (M)">🔊</button>
     </div>
   </div>
 
@@ -480,7 +518,8 @@
 
       <!-- 1. ステージ選択画面 -->
       <div class="screen-panel" id="stageScreen">
-        <div class="screen-title">ステージをえらんでください（壁＆足場リニューアル！）</div>
+        <div class="screen-title">ステージをえらんでください</div>
+        <div class="nav-hint">← → ↑ ↓ で選択 ／ Enter で次へ</div>
         <div class="stage-grid" id="stageGrid"></div>
         <button class="start-btn" id="toCharSelectBtn" type="button">キャラ選択へ進む →</button>
       </div>
@@ -491,7 +530,7 @@
         <div class="selected-stage-banner" id="selectedStageBanner">選択ステージ: ネオン・グリッド</div>
         <div class="select-columns">
           <div class="player-panel p1">
-            <div class="panel-header">1P（WASD ＋ Space ＋ Q）</div>
+            <div class="panel-header">1P（WASD ＋ Space ＋ Q） <button class="mini-btn" id="p1Random" type="button" title="ランダム選択">🎲</button></div>
             <div class="selected-preview" id="p1Preview">🤯</div>
             <div class="emoji-grid" id="p1Grid"></div>
             <div class="ability-box">
@@ -499,10 +538,11 @@
               <div class="ability-desc" id="p1AbilityDesc"></div>
               <div class="special-desc" id="p1SpecialDesc"></div>
             </div>
+            <div class="stat-bars" id="p1Stats"></div>
             <div class="key-note">A/D: 移動 ／ W・Space: 2段ジャンプ ／ S長押し: 攻撃 ／ Q: 特殊</div>
           </div>
           <div class="player-panel p2">
-            <div class="panel-header">2P（矢印キー ＋ 左右クリック）</div>
+            <div class="panel-header">2P（矢印キー ＋ 左右クリック） <button class="mini-btn" id="p2Random" type="button" title="ランダム選択">🎲</button></div>
             <div class="selected-preview" id="p2Preview">💩</div>
             <div class="emoji-grid" id="p2Grid"></div>
             <div class="ability-box">
@@ -510,22 +550,35 @@
               <div class="ability-desc" id="p2AbilityDesc"></div>
               <div class="special-desc" id="p2SpecialDesc"></div>
             </div>
-            <div class="key-note">←/→: 移動 ／ ↑・右Click: 2段ジャンプ ／ ↓長押し: 攻撃 ／ 左Click: 特殊</div>
+            <div class="stat-bars" id="p2Stats"></div>
+            <div class="key-note">←/→: 移動 ／ ↑・右Click: 2段ジャンプ ／ ↓長押し: 攻撃 ／ 左Click/Enter: 特殊</div>
           </div>
         </div>
         <div class="action-row">
           <button class="sub-btn" id="backToStageBtn" type="button">← ステージを選び直す</button>
-          <button class="start-btn" id="startBattleBtn" type="button">バトルスタート！</button>
+          <button class="start-btn" id="startBattleBtn" type="button">バトルスタート！ (Enter)</button>
         </div>
       </div>
 
       <!-- 勝敗オーバーレイ -->
       <div class="result-overlay hidden" id="resultOverlay">
         <h2 id="resultTitle">🏆 1P 🤯 の勝利！</h2>
+        <div class="result-sub" id="resultSub"></div>
         <div class="result-actions">
           <button class="start-btn" id="rematchBtn" type="button">もう一回たたかう (R)</button>
           <button class="sub-btn" id="toCharBtn" type="button">キャラを選び直す</button>
           <button class="sub-btn" id="toStageBtn" type="button">ステージを選び直す</button>
+        </div>
+      </div>
+
+      <!-- ポーズ -->
+      <div class="result-overlay pause-overlay hidden" id="pauseOverlay">
+        <h2>⏸ PAUSE</h2>
+        <div class="result-sub">P / Esc で再開</div>
+        <div class="result-actions">
+          <button class="start-btn" id="resumeBtn" type="button">再開</button>
+          <button class="sub-btn" id="pauseRestartBtn" type="button">最初からやり直す</button>
+          <button class="sub-btn" id="pauseMenuBtn" type="button">メニューへ戻る</button>
         </div>
       </div>
     </div>
@@ -974,8 +1027,21 @@
     const canvas = document.getElementById("game");
     const ctx = canvas.getContext("2d");
 
-    const VIEW_WIDTH = canvas.width;
-    const VIEW_HEIGHT = canvas.height;
+    const VIEW_WIDTH = 960;
+    const VIEW_HEIGHT = 540;
+    let renderScale = 1;
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const sc = Math.max(1, Math.min(2.5, (rect.width / VIEW_WIDTH) * dpr));
+      const w = Math.round(VIEW_WIDTH * sc);
+      const h = Math.round(VIEW_HEIGHT * sc);
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+      }
+      renderScale = w / VIEW_WIDTH;
+    }
     const GROUND_Y = 468;
 
     const STAGES = [
@@ -1103,6 +1169,17 @@
     const p2AbilityDesc = document.getElementById("p2AbilityDesc");
     const p2SpecialDesc = document.getElementById("p2SpecialDesc");
 
+    const p1Stats = document.getElementById("p1Stats");
+    const p2Stats = document.getElementById("p2Stats");
+    const p1Random = document.getElementById("p1Random");
+    const p2Random = document.getElementById("p2Random");
+    const resultSub = document.getElementById("resultSub");
+    const pauseOverlay = document.getElementById("pauseOverlay");
+    const soundBtn = document.getElementById("soundBtn");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const resumeBtn = document.getElementById("resumeBtn");
+    const pauseRestartBtn = document.getElementById("pauseRestartBtn");
+    const pauseMenuBtn = document.getElementById("pauseMenuBtn");
     const resultOverlay = document.getElementById("resultOverlay");
     const resultTitle = document.getElementById("resultTitle");
     const rematchBtn = document.getElementById("rematchBtn");
@@ -1137,6 +1214,174 @@
     let timeElapsed = 0;
     let screenShakeTimer = 0;
     let screenShakeMagnitude = 0;
+
+    const MATCH_TIME = 90;
+    let paused = false;
+    let countdownTimer = 0;
+    let fightBannerTimer = 0;
+    let hitStopTimer = 0;
+    let koTimer = 0;
+    let matchTimer = MATCH_TIME;
+    let suddenDeath = false;
+    let resultInfo = null;
+    let resultBannerText = "K.O.!";
+    const scores = { p1: 0, p2: 0 };
+
+    // ---------------------------------------------------------------- Sound (WebAudio 合成)
+    const Sound = (() => {
+      let ac = null, master = null, bgmGain = null, noiseBuf = null;
+      let muted = false;
+      try { muted = localStorage.getItem("emojiArenaMuted") === "1"; } catch (e) {}
+      let bgmMode = "menu", step = 0, nextTime = 0, timer = null;
+      const STEP = 60 / 132 / 2;
+      const CHORDS = [
+        { b: 55.0, n: [220, 261.63, 329.63, 440] },
+        { b: 43.65, n: [174.61, 220, 261.63, 349.23] },
+        { b: 65.41, n: [261.63, 329.63, 392, 523.25] },
+        { b: 49.0, n: [196, 246.94, 293.66, 392] }
+      ];
+      function ensure() {
+        if (!ac) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return null;
+          try {
+            ac = new AC();
+            master = ac.createGain();
+            master.gain.value = muted ? 0 : 0.8;
+            master.connect(ac.destination);
+            bgmGain = ac.createGain();
+            bgmGain.gain.value = 0.5;
+            bgmGain.connect(master);
+            noiseBuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
+            const d = noiseBuf.getChannelData(0);
+            for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+          } catch (e) { ac = null; return null; }
+        }
+        if (ac.state === "suspended") ac.resume();
+        return ac;
+      }
+      function tone(o) {
+        const c = ensure();
+        if (!c || muted) return;
+        const t0 = o.at !== undefined ? o.at : c.currentTime + (o.delay || 0);
+        const osc = c.createOscillator();
+        const g = c.createGain();
+        osc.type = o.type || "square";
+        osc.frequency.setValueAtTime(o.freq, t0);
+        if (o.end) osc.frequency.exponentialRampToValueAtTime(Math.max(20, o.end), t0 + o.dur);
+        const vol = o.vol !== undefined ? o.vol : 0.1;
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(vol, t0 + 0.008);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + o.dur);
+        osc.connect(g);
+        g.connect(o.bus || master);
+        osc.start(t0);
+        osc.stop(t0 + o.dur + 0.03);
+      }
+      function noise(o) {
+        const c = ensure();
+        if (!c || muted || !noiseBuf) return;
+        const t0 = o.at !== undefined ? o.at : c.currentTime + (o.delay || 0);
+        const src = c.createBufferSource();
+        src.buffer = noiseBuf;
+        const f = c.createBiquadFilter();
+        f.type = o.filter || "lowpass";
+        f.frequency.setValueAtTime(o.freq || 1200, t0);
+        if (o.freqEnd) f.frequency.exponentialRampToValueAtTime(o.freqEnd, t0 + o.dur);
+        const g = c.createGain();
+        g.gain.setValueAtTime(o.vol !== undefined ? o.vol : 0.15, t0);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + o.dur);
+        src.connect(f); f.connect(g); g.connect(o.bus || master);
+        src.start(t0);
+        src.stop(t0 + o.dur + 0.03);
+      }
+      function playStep(s, at) {
+        const ch = CHORDS[Math.floor(s / 8) % 4];
+        const i = s % 8;
+        const battle = bgmMode === "battle";
+        if (i % 2 === 0) {
+          tone({ freq: ch.b * (i === 4 ? 2 : 1), dur: STEP * 1.7, type: "triangle", vol: battle ? 0.17 : 0.12, at, bus: bgmGain });
+        }
+        const pat = [0, 1, 2, 3, 2, 1, 2, 3];
+        if (battle || i % 2 === 0) {
+          tone({ freq: ch.n[pat[i]], dur: STEP * 0.85, type: battle ? "square" : "sine", vol: battle ? 0.03 : 0.04, at, bus: bgmGain });
+        }
+        if (battle && i % 2 === 1) noise({ dur: 0.04, vol: 0.035, freq: 7000, filter: "highpass", at, bus: bgmGain });
+        if (battle && (i === 0 || i === 4)) tone({ freq: 130, end: 45, dur: 0.12, type: "sine", vol: 0.2, at, bus: bgmGain });
+      }
+      function pump() {
+        if (!ac) return;
+        if (muted) { nextTime = ac.currentTime + 0.05; return; }
+        if (nextTime < ac.currentTime) nextTime = ac.currentTime + 0.05;
+        while (nextTime < ac.currentTime + 0.3) {
+          playStep(step, nextTime);
+          step++;
+          nextTime += STEP;
+        }
+      }
+      function unlock() {
+        if (!ensure()) return;
+        if (!timer) {
+          nextTime = ac.currentTime + 0.1;
+          timer = setInterval(pump, 100);
+        }
+      }
+      function setBgm(mode) { bgmMode = mode; }
+      function toggleMute() {
+        muted = !muted;
+        try { localStorage.setItem("emojiArenaMuted", muted ? "1" : "0"); } catch (e) {}
+        if (master) master.gain.value = muted ? 0 : 0.8;
+        unlock();
+        return muted;
+      }
+      function sfx(name, arg) {
+        switch (name) {
+          case "click": tone({ freq: 760, end: 1100, dur: 0.06, type: "square", vol: 0.06 }); break;
+          case "jump": tone({ freq: 300, end: 640, dur: 0.12, type: "sine", vol: 0.13 }); break;
+          case "djump": tone({ freq: 420, end: 900, dur: 0.12, type: "sine", vol: 0.13 }); break;
+          case "shoot": {
+            const p = arg || 0;
+            tone({ freq: 760 - p * 200, end: 200, dur: 0.1 + p * 0.07, type: "square", vol: 0.06 + p * 0.04 });
+            noise({ dur: 0.06, vol: 0.05, freq: 3000, filter: "highpass" });
+            break;
+          }
+          case "hit":
+            noise({ dur: 0.2, vol: 0.25, freq: 2400, freqEnd: 200 });
+            tone({ freq: 240, end: 60, dur: 0.18, type: "sawtooth", vol: 0.16 });
+            break;
+          case "special":
+            tone({ freq: 220, end: 980, dur: 0.22, type: "sawtooth", vol: 0.08 });
+            tone({ freq: 440, end: 1480, dur: 0.22, type: "triangle", vol: 0.08, delay: 0.03 });
+            break;
+          case "boom":
+            noise({ dur: 0.6, vol: 0.4, freq: 1800, freqEnd: 80 });
+            tone({ freq: 110, end: 28, dur: 0.55, type: "sine", vol: 0.35 });
+            break;
+          case "count": tone({ freq: 660, dur: 0.14, type: "sine", vol: 0.16 }); break;
+          case "go":
+            tone({ freq: 990, dur: 0.32, type: "square", vol: 0.1 });
+            tone({ freq: 1320, dur: 0.32, type: "triangle", vol: 0.1 });
+            break;
+          case "ko":
+            noise({ dur: 0.5, vol: 0.3, freq: 2200, freqEnd: 90 });
+            tone({ freq: 520, end: 70, dur: 0.7, type: "sawtooth", vol: 0.16 });
+            break;
+          case "sudden":
+            tone({ freq: 330, end: 165, dur: 0.5, type: "sawtooth", vol: 0.12 });
+            tone({ freq: 311, end: 155, dur: 0.5, type: "sawtooth", vol: 0.1 });
+            break;
+          case "win":
+            [523.25, 659.25, 783.99, 1046.5].forEach((fr, k) => tone({ freq: fr, dur: 0.22, type: "square", vol: 0.09, delay: k * 0.11 }));
+            tone({ freq: 1046.5, dur: 0.55, type: "triangle", vol: 0.1, delay: 0.46 });
+            break;
+        }
+      }
+      return { sfx, unlock, setBgm, toggleMute, isMuted: () => muted };
+    })();
+
+    function refreshSoundBtn() {
+      soundBtn.textContent = Sound.isMuted() ? "🔇" : "🔊";
+    }
 
     function getCurrentStage() {
       return STAGES[selectedStageIndex];
@@ -1199,15 +1444,36 @@
         card.appendChild(nameEl);
         card.appendChild(descEl);
 
-        card.addEventListener("click", () => {
-          selectedStageIndex = idx;
-          Array.from(stageGrid.children).forEach((el, i) => {
-            el.classList.toggle("active", i === selectedStageIndex);
-          });
-        });
+        card.addEventListener("click", () => selectStage(idx));
 
         stageGrid.appendChild(card);
       });
+    }
+
+    function selectStage(idx) {
+      selectedStageIndex = (idx + STAGES.length) % STAGES.length;
+      Array.from(stageGrid.children).forEach((el, i) => {
+        el.classList.toggle("active", i === selectedStageIndex);
+      });
+    }
+
+    function clamp01(v) { return Math.max(0.06, Math.min(1, v)); }
+
+    function renderStats(el, def) {
+      const items = [
+        ["移動", clamp01((def.moveSpeed - 235) / 115)],
+        ["跳躍", clamp01(((-def.jumpVel - def.doubleJumpVel) - 1150) / 260)],
+        ["射程", clamp01((def.pulseSpeed * def.maxPulseRangeLife) / 520)],
+        ["連射", clamp01((1 / def.pulseCooldown - 1.2) / 2.8)],
+        ["耐久", clamp01((1 / def.knockbackScale - 0.85) / 0.75)]
+      ];
+      el.innerHTML = items
+        .map(([label, v]) => `<div class="stat-item">${label}<div class="stat-track"><div class="stat-fill" style="width:${Math.round(v * 100)}%"></div></div></div>`)
+        .join("");
+    }
+
+    function randomCharacter() {
+      return SELECTABLE_CHARACTERS[Math.floor(Math.random() * SELECTABLE_CHARACTERS.length)];
     }
 
     function updateAbilityInfoUI() {
@@ -1223,6 +1489,8 @@
       p2AbilityName.textContent = def2.abilityName;
       p2AbilityDesc.textContent = def2.abilityDesc;
       p2SpecialDesc.textContent = `${def2.specialName}: ${def2.specialDesc}`;
+      renderStats(p1Stats, def1);
+      renderStats(p2Stats, def2);
     }
 
     function buildCharacterSelectUI() {
@@ -1285,6 +1553,8 @@
 
     function openStageScreen() {
       clearInputs();
+      setPaused(false);
+      Sound.setBgm("menu");
       screenMode = "stage";
       battleHud.classList.add("hidden");
       charScreen.classList.add("hidden");
@@ -1294,6 +1564,8 @@
 
     function openCharScreen() {
       clearInputs();
+      setPaused(false);
+      Sound.setBgm("menu");
       screenMode = "char";
       battleHud.classList.add("hidden");
       stageScreen.classList.add("hidden");
@@ -1339,7 +1611,8 @@
         atlasPin: null,
         squashX: 1,
         squashY: 1,
-        animTime: 0
+        animTime: 0,
+        koAngle: 0
       };
     }
 
@@ -1359,12 +1632,92 @@
         createFighter("p2", "2P", selectedP2, VIEW_WIDTH - 110 - PLAYER_W, -1, "#ff70a6")
       ];
       screenMode = "battle";
+      paused = false;
+      pauseOverlay.classList.add("hidden");
+      countdownTimer = 3;
+      fightBannerTimer = 0;
+      hitStopTimer = 0;
+      koTimer = 0;
+      matchTimer = MATCH_TIME;
+      suddenDeath = false;
+      resultInfo = null;
+      Sound.unlock();
+      Sound.setBgm("battle");
+      Sound.sfx("count");
       stageScreen.classList.add("hidden");
       charScreen.classList.add("hidden");
       resultOverlay.classList.add("hidden");
       battleHud.classList.remove("hidden");
       stageHud.textContent = `🏟️ ${getCurrentStage().name}`;
       updateHud();
+    }
+
+    function startNewSeries() {
+      scores.p1 = 0;
+      scores.p2 = 0;
+      startBattle();
+    }
+
+    function setPaused(v) {
+      if (screenMode !== "battle") v = false;
+      paused = v;
+      pauseOverlay.classList.toggle("hidden", !v);
+      if (v) clearInputs();
+    }
+
+    function finishMatch(winner, reason) {
+      screenMode = "result";
+      koTimer = reason === "time" ? 0.7 : 1.15;
+      resultBannerText = reason === "time" ? "TIME UP!" : "K.O.!";
+      resultInfo = { winner, reason };
+      if (winner) scores[winner.id] += 1;
+      pulses = [];
+      shockwaves = [];
+      hazardZones = [];
+      slotMachines = [];
+      ufoDrones = [];
+      for (const f of fighters) {
+        f.invincibleTimer = 0;
+        f.stealthTimer = 0;
+        f.barrierTimer = 0;
+        f.mindChargeTimer = 0;
+        f.dashStrikeTimer = 0;
+        f.meteorSlamActive = false;
+        f.isChargingPulse = false;
+        f.pulseChargeTime = 0;
+        f.warpBeacon = null;
+        f.atlasPin = null;
+      }
+      triggerScreenShake(0.35, 10);
+      Sound.sfx("ko");
+      updateHud();
+    }
+
+    function handleTimeUp() {
+      const a = fighters[0];
+      const b = fighters[1];
+      if (a.hp !== b.hp) {
+        finishMatch(a.hp > b.hp ? a : b, "time");
+      } else {
+        suddenDeath = true;
+        fighters.forEach((f) => { f.hp = 1; });
+        spawnPopup(VIEW_WIDTH / 2, 150, "💀 SUDDEN DEATH!! 💀", "#ff5c8a");
+        triggerScreenShake(0.3, 6);
+        Sound.sfx("sudden");
+        updateHud();
+      }
+    }
+
+    function showResultOverlay() {
+      const info = resultInfo || { winner: null, reason: "ko" };
+      resultTitle.textContent = info.winner
+        ? `🏆 ${info.winner.label} ${info.winner.emoji} の勝利！`
+        : "🤝 引き分け！";
+      resultSub.textContent =
+        (info.reason === "time" ? "タイムアップ判定（残りHPが多い方の勝ち）　" : "") +
+        `通算  1P ${scores.p1} - ${scores.p2} 2P`;
+      resultOverlay.classList.remove("hidden");
+      Sound.sfx("win");
     }
 
     function isSpecialActive(f) {
@@ -1396,17 +1749,22 @@
         }
         return `<span class="sp-badge">${keyHint} 特殊OK</span>`;
       }
-      return `<span class="sp-badge cd">${keyHint} ${f.specialCooldown.toFixed(1)}s</span>`;
+      const pct = Math.max(0, Math.min(100, (1 - f.specialCooldown / (f.def.specialCooldown || 1)) * 100));
+      return `<span class="sp-badge cd" style="--p:${pct.toFixed(0)}%">${keyHint} ${f.specialCooldown.toFixed(1)}s</span>`;
     }
 
     function updateHud() {
       const f1 = fighters[0];
       const f2 = fighters[1];
       if (!f1 || !f2) return;
-      const chillTag1 = f1.chillTimer > 0 ? "❄️" : "";
-      const chillTag2 = f2.chillTimer > 0 ? "❄️" : "";
-      p1Hud.innerHTML = `1P ${f1.emoji}${chillTag1} <span class="hp-hearts">${"♥".repeat(Math.max(0, f1.hp))}${"♡".repeat(Math.max(0, MAX_HP - f1.hp))}</span> ${formatSpBadge(f1, "Q")}`;
-      p2Hud.innerHTML = `2P ${f2.emoji}${chillTag2} <span class="hp-hearts">${"♥".repeat(Math.max(0, f2.hp))}${"♡".repeat(Math.max(0, MAX_HP - f2.hp))}</span> ${formatSpBadge(f2, "左Click")}`;
+      const chill = (f) => (f.chillTimer > 0 ? "❄️" : "");
+      const hearts = (f) => `<span class="hp-hearts">${"♥".repeat(Math.max(0, f.hp))}${"♡".repeat(Math.max(0, MAX_HP - f.hp))}</span>`;
+      const wins = (n) => (n > 0 ? `<span class="wins">🏆${n}</span>` : "");
+      p1Hud.innerHTML = `1P ${f1.emoji}${chill(f1)} ${hearts(f1)} ${formatSpBadge(f1, "Q")} ${wins(scores.p1)}`;
+      p2Hud.innerHTML = `${wins(scores.p2)} 2P ${f2.emoji}${chill(f2)} ${hearts(f2)} ${formatSpBadge(f2, "左Click")}`;
+      const timeText = suddenDeath ? "💀 SUDDEN DEATH" : `⏱ ${Math.max(0, Math.ceil(matchTimer))}`;
+      stageHud.textContent = `🏟️ ${getCurrentStage().name} ｜ ${timeText}`;
+      stageHud.classList.toggle("warn", suddenDeath || (screenMode === "battle" && countdownTimer <= 0 && matchTimer <= 10));
     }
 
     function spawnParticles(x, y, count, color) {
@@ -1439,6 +1797,7 @@
       if (fighter.pulseCooldown > 0 || fighter.mindChargeTimer > 0) return;
       fighter.pulseTimer = PULSE_DURATION;
       fighter.pulseCooldown = fighter.def.pulseCooldown;
+      Sound.sfx("shoot", chargeRatio);
       fighter.squashX = 1.2;
       fighter.squashY = 0.85;
       if (fighter.stealthTimer > 0) {
@@ -1604,6 +1963,7 @@
       const type = fighter.def.specialType;
       const cx = fighter.x + fighter.w / 2;
       const cy = fighter.y + fighter.h / 2;
+      Sound.sfx("special");
 
       if (type === "mind_explosion") {
         // 🤯特殊：ギガ・メルトダウン（一発どかん！）
@@ -2030,6 +2390,10 @@
       if (target.invincibleTimer > 0 || screenMode !== "battle") return;
       target.hp -= 1;
       target.invincibleTimer = target.def.invincibleDuration;
+      hitStopTimer = Math.max(hitStopTimer, target.hp <= 0 ? 0.16 : 0.07);
+      triggerScreenShake(0.14, target.hp <= 0 ? 9 : 4);
+      Sound.sfx("hit");
+      spawnPopup(target.x + target.w / 2, target.y - 6, "-1", "#ff5c8a");
       if (chillDuration > 0) {
         target.chillTimer = Math.max(target.chillTimer, chillDuration);
         spawnParticles(target.x + target.w / 2, target.y + target.h / 2, 12, "#70e4ff");
@@ -2053,12 +2417,7 @@
 
       if (target.hp <= 0) {
         target.hp = 0;
-        const winner = fighters.find((f) => f.id !== target.id);
-        screenMode = "result";
-        resultTitle.textContent = winner
-          ? `🏆 ${winner.label} ${winner.emoji} の勝利！`
-          : "🤝 引き分け！";
-        resultOverlay.classList.remove("hidden");
+        finishMatch(fighters.find((f) => f.id !== target.id), "ko");
       }
     }
 
@@ -2097,6 +2456,7 @@
           f.squashY = 0.65;
           triggerScreenShake(0.28, 9);
           spawnPopup(ex, ey - 32, "🤯 KABOOOM!!", "#ff5c8a");
+          Sound.sfx("boom");
           shockwaves.push({
             ownerId: f.id,
             x: ex,
@@ -2224,6 +2584,7 @@
           f.squashX = 0.78;
           f.squashY = 1.25;
           spawnParticles(f.x + f.w / 2, f.y + f.h, 6, f.accentColor);
+          Sound.sfx("jump");
         } else if (f.jumpsLeft > 0) {
           f.vy = f.def.doubleJumpVel * chillJumpFactor;
           f.jumpsLeft -= 1;
@@ -2237,6 +2598,7 @@
           f.squashX = 0.75;
           f.squashY = 1.28;
           spawnParticles(f.x + f.w / 2, f.y + f.h, 9, "#ffd166");
+          Sound.sfx("djump");
         }
       }
 
@@ -2331,13 +2693,34 @@
     }
 
     function update(dt) {
+      if (paused) return;
       timeElapsed += dt;
+      if (fightBannerTimer > 0) fightBannerTimer = Math.max(0, fightBannerTimer - dt);
       if (screenShakeTimer > 0) {
         screenShakeTimer = Math.max(0, screenShakeTimer - dt);
         if (screenShakeTimer === 0) screenShakeMagnitude = 0;
       }
 
       if (screenMode === "battle" && fighters.length === 2) {
+        if (countdownTimer > 0) {
+          const prev = Math.ceil(countdownTimer);
+          countdownTimer -= dt;
+          const now = Math.ceil(Math.max(0, countdownTimer));
+          if (now !== prev) {
+            if (countdownTimer > 0) {
+              Sound.sfx("count");
+            } else {
+              Sound.sfx("go");
+              fightBannerTimer = 0.9;
+              clearInputs();
+            }
+          }
+        } else if (hitStopTimer > 0) {
+          hitStopTimer = Math.max(0, hitStopTimer - dt);
+        }
+      }
+
+      if (screenMode === "battle" && fighters.length === 2 && countdownTimer <= 0 && hitStopTimer <= 0) {
         const stage = getCurrentStage();
         stepFighter(fighters[0], p1Input, dt, stage.platforms);
         stepFighter(fighters[1], p2Input, dt, stage.platforms);
@@ -2694,6 +3077,30 @@
             f2.x -= pushDir * sep;
           }
         }
+
+        if (screenMode === "battle" && !suddenDeath) {
+          matchTimer -= dt;
+          if (matchTimer <= 0) {
+            matchTimer = 0;
+            handleTimeUp();
+          }
+        }
+      }
+
+      if (screenMode === "result" && koTimer > 0) {
+        koTimer -= dt;
+        const sdt = dt * 0.3;
+        const platforms = getCurrentStage().platforms;
+        for (const f of fighters) {
+          stepFighter(
+            f,
+            { left: false, right: false, jumpPressed: false, pulseHeld: false, pulseReleased: false, specialPressed: false },
+            sdt,
+            platforms
+          );
+          if (f.hp <= 0) f.koAngle += dt * 9;
+        }
+        if (koTimer <= 0) showResultOverlay();
       }
 
       for (let i = floatingPopups.length - 1; i >= 0; i--) {
@@ -2717,13 +3124,74 @@
       }
     }
 
+    const stageDecor = {};
+    function seededRandom(seed) {
+      let st = seed;
+      return () => {
+        st = (st * 16807) % 2147483647;
+        return (st - 1) / 2147483646;
+      };
+    }
+
+    function getDecor(idx) {
+      if (stageDecor[idx]) return stageDecor[idx];
+      const rnd = seededRandom(1234 + idx * 977);
+      const buildings = [];
+      let x = -10;
+      while (x < VIEW_WIDTH) {
+        const w = 40 + rnd() * 70;
+        const h = 70 + rnd() * (idx === 1 ? 270 : idx === 2 ? 90 : 150);
+        const wins = [];
+        for (let wy = GROUND_Y - h + 10; wy < GROUND_Y - 10; wy += 16) {
+          for (let wx = x + 6; wx < x + w - 10; wx += 14) {
+            if (rnd() < 0.22) wins.push([wx, wy, rnd() * 6.28]);
+          }
+        }
+        buildings.push({ x, w, h, wins });
+        x += w + rnd() * 10;
+      }
+      const orbs = [];
+      for (let i = 0; i < 34; i++) {
+        orbs.push({ x: rnd() * VIEW_WIDTH, y: rnd() * GROUND_Y, r: 1 + rnd() * 2.6, sp: 6 + rnd() * 18, ph: rnd() * 6.28, amp: 6 + rnd() * 14 });
+      }
+      const moons = [{ x: 770, y: 96 }, { x: 190, y: 86 }, { x: 480, y: 120 }, { x: 800, y: 110 }];
+      stageDecor[idx] = { buildings, orbs, moon: moons[idx % moons.length] };
+      return stageDecor[idx];
+    }
+
     function drawArena() {
       const stage = getCurrentStage();
+      const decor = getDecor(selectedStageIndex);
       const grad = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
       grad.addColorStop(0, stage.bgTop);
       grad.addColorStop(1, stage.bgBottom);
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, VIEW_WIDTH, GROUND_Y);
+
+      // 月 / 光源
+      const mp = 1 + Math.sin(timeElapsed * 0.8) * 0.03;
+      const moonGrad = ctx.createRadialGradient(decor.moon.x, decor.moon.y, 4, decor.moon.x, decor.moon.y, 110 * mp);
+      moonGrad.addColorStop(0, "rgba(255,255,255,0.28)");
+      moonGrad.addColorStop(0.25, "rgba(255,255,255,0.08)");
+      moonGrad.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = moonGrad;
+      ctx.fillRect(0, 0, VIEW_WIDTH, GROUND_Y);
+      ctx.fillStyle = "rgba(255,255,255,0.22)";
+      ctx.beginPath();
+      ctx.arc(decor.moon.x, decor.moon.y, 28, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 街のシルエット
+      for (const b of decor.buildings) {
+        ctx.fillStyle = "rgba(0,0,0,0.30)";
+        ctx.fillRect(b.x, GROUND_Y - b.h, b.w, b.h);
+        for (const w of b.wins) {
+          ctx.globalAlpha = 0.2 + 0.2 * (0.5 + 0.5 * Math.sin(timeElapsed * 1.4 + w[2]));
+          ctx.fillStyle = stage.floorAccent;
+          ctx.fillRect(w[0], w[1], 6, 8);
+        }
+        ctx.globalAlpha = 1;
+      }
 
       ctx.strokeStyle = stage.gridColor;
       ctx.lineWidth = 1.5;
@@ -2740,30 +3208,114 @@
         ctx.stroke();
       }
 
+      // ふわふわ光の粒
+      ctx.fillStyle = stage.floorAccent;
+      for (const o of decor.orbs) {
+        const oy = (((o.y - timeElapsed * o.sp) % GROUND_Y) + GROUND_Y) % GROUND_Y;
+        const ox = o.x + Math.sin(timeElapsed * 0.6 + o.ph) * o.amp;
+        ctx.globalAlpha = 0.14 + 0.14 * (0.5 + 0.5 * Math.sin(timeElapsed * 1.7 + o.ph));
+        ctx.beginPath();
+        ctx.arc(ox, oy, o.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
       for (const p of stage.platforms) {
         if (p.type === "floor") {
-          ctx.fillStyle = "#171033";
+          const fg = ctx.createLinearGradient(0, p.y, 0, p.y + p.h);
+          fg.addColorStop(0, "#241a4d");
+          fg.addColorStop(1, "#0f0a24");
+          ctx.fillStyle = fg;
           ctx.fillRect(p.x, p.y, p.w, p.h);
+          ctx.save();
+          ctx.shadowColor = stage.floorAccent;
+          ctx.shadowBlur = 14;
           ctx.fillStyle = stage.floorAccent;
-          ctx.fillRect(p.x, p.y, p.w, 6);
+          ctx.fillRect(p.x, p.y, p.w, 5);
+          ctx.restore();
+          ctx.strokeStyle = "rgba(255,255,255,0.05)";
+          ctx.lineWidth = 1;
+          for (let x = 0; x < p.w; x += 48) {
+            ctx.beginPath();
+            ctx.moveTo(x, p.y + 6);
+            ctx.lineTo(x - 24, p.y + p.h);
+            ctx.stroke();
+          }
         } else if (p.type === "wall") {
           ctx.fillStyle = stage.wallFill || "#1f1447";
           ctx.beginPath();
           ctx.roundRect(p.x, p.y, p.w, p.h, 5);
           ctx.fill();
+          ctx.save();
+          ctx.shadowColor = stage.wallAccent || "#72efdd";
+          ctx.shadowBlur = 10;
           ctx.strokeStyle = stage.wallAccent || "#72efdd";
           ctx.lineWidth = 2;
           ctx.stroke();
+          ctx.restore();
           ctx.fillStyle = stage.wallAccent || "#72efdd";
+          ctx.globalAlpha = 0.55 + 0.25 * Math.sin(timeElapsed * 3 + p.x);
           ctx.fillRect(p.x + p.w / 2 - 2, p.y + 8, 4, Math.max(8, p.h - 16));
+          ctx.globalAlpha = 1;
         } else {
           ctx.fillStyle = stage.shelfFill;
           ctx.beginPath();
           ctx.roundRect(p.x, p.y, p.w, p.h, 6);
           ctx.fill();
+          ctx.save();
+          ctx.shadowColor = stage.shelfAccent;
+          ctx.shadowBlur = 8;
           ctx.fillStyle = stage.shelfAccent;
           ctx.fillRect(p.x + 4, p.y + 2, p.w - 8, 4);
+          ctx.restore();
         }
+      }
+
+      // ビネット
+      const vg = ctx.createRadialGradient(VIEW_WIDTH / 2, VIEW_HEIGHT / 2, VIEW_HEIGHT * 0.45, VIEW_WIDTH / 2, VIEW_HEIGHT / 2, VIEW_WIDTH * 0.62);
+      vg.addColorStop(0, "rgba(0,0,0,0)");
+      vg.addColorStop(1, "rgba(0,0,0,0.38)");
+      ctx.fillStyle = vg;
+      ctx.fillRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
+    }
+
+    function groundYBelow(f) {
+      const stage = getCurrentStage();
+      const fx = f.x + f.w / 2;
+      let best = GROUND_Y;
+      for (const p of stage.platforms) {
+        if (p.type === "wall") continue;
+        if (fx >= p.x && fx <= p.x + p.w && p.y >= f.y + f.h - 6 && p.y < best) best = p.y;
+      }
+      return best;
+    }
+
+    function drawOverlayBanners() {
+      const bannerText = (txt, scale, alpha, color) => {
+        ctx.save();
+        ctx.translate(VIEW_WIDTH / 2, VIEW_HEIGHT / 2 - 30);
+        ctx.scale(scale, scale);
+        ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+        ctx.font = '900 96px "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif';
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.lineJoin = "round";
+        ctx.lineWidth = 12;
+        ctx.strokeStyle = "#0b0918";
+        ctx.strokeText(txt, 0, 0);
+        ctx.fillStyle = color;
+        ctx.fillText(txt, 0, 0);
+        ctx.restore();
+      };
+      if (screenMode === "battle" && countdownTimer > 0) {
+        const n = Math.ceil(countdownTimer);
+        const t = 1 - (countdownTimer - (n - 1));
+        bannerText(String(n), 1.7 - 0.7 * Math.min(1, t * 4), 1 - Math.max(0, (t - 0.75) / 0.25), "#ffd166");
+      } else if (screenMode === "battle" && fightBannerTimer > 0) {
+        const t = 1 - fightBannerTimer / 0.9;
+        bannerText("FIGHT!", 1.5 - 0.5 * Math.min(1, t * 5), fightBannerTimer < 0.25 ? fightBannerTimer / 0.25 : 1, "#72efdd");
+      } else if (screenMode === "result" && koTimer > 0) {
+        bannerText(resultBannerText, 1.6 - 0.6 * Math.min(1, (1.15 - koTimer) * 6), 1, "#ff5c8a");
       }
     }
 
@@ -2810,6 +3362,18 @@
         if (f.invincibleTimer > 0 && Math.floor(f.invincibleTimer * 18) % 2 === 0) {
           continue;
         }
+        {
+          const gy = groundYBelow(f);
+          const dist = Math.max(0, gy - (f.y + f.h));
+          const k = Math.max(0.35, 1 - dist / 320);
+          ctx.save();
+          ctx.globalAlpha = (f.stealthTimer > 0 ? 0.08 : 0.38) * k;
+          ctx.fillStyle = "#000";
+          ctx.beginPath();
+          ctx.ellipse(f.x + f.w / 2, gy + 1, 17 * k, 4.5 * k, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
         const cx = f.x + f.w / 2;
         const cy = f.y + f.h / 2;
         const bob = f.onGround && Math.abs(f.vx) > 10 ? Math.abs(Math.sin(f.animTime)) * -4 : 0;
@@ -2821,6 +3385,27 @@
         const jitterX = f.mindChargeTimer > 0 ? (Math.random() - 0.5) * 6 : 0;
         const jitterY = f.mindChargeTimer > 0 ? (Math.random() - 0.5) * 6 : 0;
         ctx.translate(cx + jitterX, cy + bob + jitterY);
+        if (f.hp <= 0) {
+          ctx.rotate(f.koAngle || 0);
+        } else {
+          // 名札
+          ctx.save();
+          ctx.font = "bold 11px sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = "rgba(11,9,24,0.9)";
+          ctx.strokeText(f.label, 0, -34);
+          ctx.fillStyle = f.accentColor;
+          ctx.fillText(f.label, 0, -34);
+          ctx.beginPath();
+          ctx.moveTo(-4, -27);
+          ctx.lineTo(4, -27);
+          ctx.lineTo(0, -22);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        }
 
         if (f.mindChargeTimer > 0) {
           const ratio = 1 - f.mindChargeTimer / (f.mindChargeMax || 0.45);
@@ -3437,6 +4022,7 @@
     }
 
     function render() {
+      ctx.setTransform(renderScale, 0, 0, renderScale, 0, 0);
       ctx.clearRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
       ctx.save();
       if (screenShakeTimer > 0 && screenShakeMagnitude > 0) {
@@ -3448,6 +4034,7 @@
       if (screenMode === "battle" || screenMode === "result") {
         drawFighters();
         drawPulsesAndParticles();
+        drawOverlayBanners();
       }
       ctx.restore();
     }
@@ -3462,19 +4049,60 @@
     }
 
     window.addEventListener("keydown", (e) => {
-      if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", " "].includes(e.key)) {
+      Sound.unlock();
+      const code = e.code;
+      if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", " ", "Slash"].includes(e.key) || code === "Slash") {
         e.preventDefault();
       }
-
-      const code = e.code;
-
-      if (code === "KeyR" && !e.repeat && (screenMode === "battle" || screenMode === "result")) {
-        startBattle();
+      if (code === "KeyM" && !e.repeat) {
+        Sound.toggleMute();
+        refreshSoundBtn();
         return;
       }
 
-      if (screenMode !== "battle") return;
+      // メニュー操作
+      if (screenMode === "stage") {
+        if (code === "ArrowLeft") selectStage(selectedStageIndex - 1);
+        else if (code === "ArrowRight") selectStage(selectedStageIndex + 1);
+        else if (code === "ArrowUp") selectStage(selectedStageIndex - 2);
+        else if (code === "ArrowDown") selectStage(selectedStageIndex + 2);
+        else if ((code === "Enter" || code === "NumpadEnter") && !e.repeat) {
+          e.preventDefault();
+          Sound.sfx("click");
+          openCharScreen();
+        }
+        return;
+      }
+      if (screenMode === "char") {
+        if ((code === "Enter" || code === "NumpadEnter") && !e.repeat) {
+          e.preventDefault();
+          startNewSeries();
+        } else if (code === "Escape" && !e.repeat) {
+          openStageScreen();
+        }
+        return;
+      }
+      if (screenMode === "result") {
+        if (code === "KeyR" && !e.repeat) {
+          startBattle();
+        } else if ((code === "Enter" || code === "NumpadEnter") && !e.repeat && koTimer <= 0) {
+          e.preventDefault();
+          startBattle();
+        }
+        return;
+      }
 
+      // 対戦中
+      if ((code === "KeyP" || code === "Escape") && !e.repeat) {
+        setPaused(!paused);
+        return;
+      }
+      if (code === "KeyR" && !e.repeat) {
+        startBattle();
+        return;
+      }
+      if (screenMode !== "battle" || paused || countdownTimer > 0) return;
+      if (code === "Enter" || code === "NumpadEnter") e.preventDefault();
       if (code === "KeyA") p1Input.left = true;
       if (code === "KeyD") p1Input.right = true;
       if ((code === "KeyW" || code === "Space") && !e.repeat) p1Input.jumpPressed = true;
@@ -3485,13 +4113,15 @@
       if (code === "KeyQ" && !e.repeat) {
         p1Input.specialPressed = true;
       }
-
       if (code === "ArrowLeft") p2Input.left = true;
       if (code === "ArrowRight") p2Input.right = true;
       if (code === "ArrowUp" && !e.repeat) p2Input.jumpPressed = true;
       if (code === "ArrowDown" && !e.repeat) {
         p2Input.pulseHeld = true;
         p2Input.pulseReleased = false;
+      }
+      if ((code === "Enter" || code === "NumpadEnter" || code === "Slash") && !e.repeat) {
+        p2Input.specialPressed = true;
       }
     });
 
@@ -3517,7 +4147,8 @@
     });
 
     canvas.addEventListener("mousedown", (e) => {
-      if (screenMode !== "battle") return;
+      Sound.unlock();
+      if (screenMode !== "battle" || paused || countdownTimer > 0) return;
       if (e.button === 0) {
         p2Input.specialPressed = true;
       } else if (e.button === 2) {
@@ -3529,17 +4160,49 @@
       e.preventDefault();
     });
 
-    window.addEventListener("blur", clearInputs);
+    window.addEventListener("blur", () => {
+      clearInputs();
+      if (screenMode === "battle" && countdownTimer <= 0) setPaused(true);
+    });
+    window.addEventListener("resize", resizeCanvas);
+    document.addEventListener("pointerdown", () => Sound.unlock());
+    document.addEventListener("click", (e) => {
+      if (e.target.closest && e.target.closest("button")) Sound.sfx("click");
+    });
+    soundBtn.addEventListener("click", () => {
+      Sound.toggleMute();
+      refreshSoundBtn();
+      soundBtn.blur();
+    });
+    pauseBtn.addEventListener("click", () => {
+      setPaused(!paused);
+      pauseBtn.blur();
+    });
+    resumeBtn.addEventListener("click", () => setPaused(false));
+    pauseRestartBtn.addEventListener("click", startBattle);
+    pauseMenuBtn.addEventListener("click", openStageScreen);
+    p1Random.addEventListener("click", () => {
+      selectedP1 = randomCharacter();
+      refreshActiveButtons();
+      updateAbilityInfoUI();
+    });
+    p2Random.addEventListener("click", () => {
+      selectedP2 = randomCharacter();
+      refreshActiveButtons();
+      updateAbilityInfoUI();
+    });
 
     toCharSelectBtn.addEventListener("click", openCharScreen);
     backToStageBtn.addEventListener("click", openStageScreen);
-    startBattleBtn.addEventListener("click", startBattle);
+    startBattleBtn.addEventListener("click", startNewSeries);
     rematchBtn.addEventListener("click", startBattle);
     toCharBtn.addEventListener("click", openCharScreen);
     toStageBtn.addEventListener("click", openStageScreen);
 
     buildStageSelectUI();
     buildCharacterSelectUI();
+    refreshSoundBtn();
+    resizeCanvas();
     requestAnimationFrame(loop);
   </script>
 </body>
