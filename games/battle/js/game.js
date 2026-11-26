@@ -64,16 +64,16 @@ const toStageBtn = document.getElementById("toStageBtn");
 // アシスト設定UI
 const p1AutoFireEl = document.getElementById("p1AutoFire");
 const p1AutoAimEl = document.getElementById("p1AutoAim");
-const p1FullAutoEl = document.getElementById("p1FullAuto");
+const p1FullAutoEl = document.getElementById("p1FullAutoAttack");
 const p2AutoFireEl = document.getElementById("p2AutoFire");
 const p2AutoAimEl = document.getElementById("p2AutoAim");
-const p2FullAutoEl = document.getElementById("p2FullAuto");
+const p2FullAutoEl = document.getElementById("p2FullAutoAttack");
 const pauseP1AutoFireEl = document.getElementById("pauseP1AutoFire");
 const pauseP1AutoAimEl = document.getElementById("pauseP1AutoAim");
-const pauseP1FullAutoEl = document.getElementById("pauseP1FullAuto");
+const pauseP1FullAutoEl = document.getElementById("pauseP1FullAutoAttack");
 const pauseP2AutoFireEl = document.getElementById("pauseP2AutoFire");
 const pauseP2AutoAimEl = document.getElementById("pauseP2AutoAim");
-const pauseP2FullAutoEl = document.getElementById("pauseP2FullAuto");
+const pauseP2FullAutoEl = document.getElementById("pauseP2FullAutoAttack");
 
 const assistOptions = {
   p1: { autoFire: false, autoAim: false, fullAuto: false },
