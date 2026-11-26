@@ -1,0 +1,784 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ROGUE - Dungeon</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #080b08;
+    color: #b8d5ad;
+    font-family: Consolas, monospace;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+
+main {
+    width: 950px;
+    max-width: 100%;
+}
+
+header {
+    border-bottom: 1px solid #405040;
+    padding-bottom: 12px;
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+}
+
+h1 {
+    letter-spacing: 5px;
+    color: #d9e8ce;
+}
+
+.layout {
+    display: grid;
+    grid-template-columns: 1fr 230px;
+    gap: 12px;
+}
+
+.panel {
+    background: #111813;
+    border: 1px solid #354538;
+    padding: 12px;
+    border-radius: 6px;
+}
+
+#map {
+    white-space: pre;
+    font-size: 15px;
+    line-height: 1.15;
+    min-height: 450px;
+    overflow: auto;
+    color: #a8c3a5;
+    user-select: none;
+}
+
+aside {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+}
+
+.stat {
+    background: #080e09;
+    padding: 8px;
+    border: 1px solid #26372a;
+}
+
+.stat span {
+    display: block;
+    font-size: 11px;
+    color: #718671;
+}
+
+.stat b {
+    display: block;
+    font-size: 18px;
+    margin-top: 4px;
+}
+
+#log {
+    height: 200px;
+    overflow-y: auto;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.logline {
+    border-bottom: 1px solid #243025;
+    padding: 4px 0;
+}
+
+.controls {
+    font-size: 12px;
+    line-height: 1.8;
+    color: #829582;
+}
+
+button {
+    background: #203323;
+    border: 1px solid #4b654d;
+    color: #c4d9bb;
+    padding: 9px 12px;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+button:hover {
+    background: #314b34;
+}
+
+#overlay {
+    position: fixed;
+    inset: 0;
+    background: #000c;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal {
+    background: #111a14;
+    border: 1px solid #58715a;
+    padding: 25px;
+    text-align: center;
+    width: 350px;
+}
+
+@media(max-width:700px) {
+    .layout {
+        grid-template-columns: 1fr;
+    }
+
+    #map {
+        font-size: 12px;
+        min-height: 320px;
+    }
+
+    aside {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<main>
+
+<header>
+    <h1>ROGUE</h1>
+    <small>ASCII DUNGEON</small>
+</header>
+
+<div class="layout">
+
+<section class="panel">
+    <div id="map"></div>
+</section>
+
+<aside>
+
+<section class="panel stats">
+    <div class="stat">
+        <span>LEVEL</span>
+        <b id="depth">1</b>
+    </div>
+
+    <div class="stat">
+        <span>GOLD</span>
+        <b id="gold">0</b>
+    </div>
+
+    <div class="stat">
+        <span>HP</span>
+        <b id="hp">20 / 20</b>
+    </div>
+
+    <div class="stat">
+        <span>ATTACK</span>
+        <b id="atk">3</b>
+    </div>
+
+    <div class="stat">
+        <span>EXP</span>
+        <b id="xp">0</b>
+    </div>
+
+    <div class="stat">
+        <span>TURNS</span>
+        <b id="turns">0</b>
+    </div>
+</section>
+
+<section class="panel">
+    <div style="color:#718671;font-size:11px">
+        ADVENTURE LOG
+    </div>
+    <div id="log"></div>
+</section>
+
+<section class="panel controls">
+    <b>移動</b>：矢印 / WASD / HJKL<br>
+    <b>待機</b>：Space<br>
+    <b>階段</b>：Enter<br>
+    <b>再スタート</b>：R<br><br>
+
+    @ プレイヤー<br>
+    # 壁<br>
+    . 床<br>
+    &gt; 階段<br>
+    $ 金貨<br>
+    ! 回復薬<br>
+    k コボルト<br>
+    o オーク<br>
+    b コウモリ<br>
+    T トロール<br><br>
+
+    <button onclick="restart()">NEW GAME</button>
+</section>
+
+</aside>
+</div>
+</main>
+
+<div id="overlay">
+    <div class="modal">
+        <h2 id="ovtitle">GAME OVER</h2>
+        <p id="ovtext"></p>
+        <button onclick="restart()">PLAY AGAIN</button>
+    </div>
+</div>
+
+<script>
+const W = 56;
+const H = 27;
+
+let map;
+let rooms;
+let player;
+let monsters;
+let items;
+let depth;
+let gold;
+let xp;
+let turns;
+let gameover;
+let seen;
+
+const rand = (a,b) =>
+    Math.floor(Math.random()*(b-a+1))+a;
+
+const el = id => document.getElementById(id);
+
+
+// ログ
+function log(text) {
+    el("log").innerHTML =
+        `<div class="logline">${text}</div>` +
+        el("log").innerHTML;
+}
+
+
+// マップ初期化
+function createMap() {
+    map = Array.from(
+        {length:H},
+        () => Array(W).fill("#")
+    );
+
+    seen = Array.from(
+        {length:H},
+        () => Array(W).fill(false)
+    );
+
+    rooms = [];
+    monsters = [];
+    items = [];
+
+    // 部屋生成
+    for(let attempt=0;attempt<100;attempt++) {
+
+        if(rooms.length>=8) break;
+
+        let rw=rand(5,10);
+        let rh=rand(4,7);
+
+        let rx=rand(1,W-rw-2);
+        let ry=rand(1,H-rh-2);
+
+        let room={
+            x:rx,
+            y:ry,
+            w:rw,
+            h:rh,
+            cx:rx+Math.floor(rw/2),
+            cy:ry+Math.floor(rh/2)
+        };
+
+        // 部屋同士が重なっていたら生成しない
+        let overlap=rooms.some(r =>
+            rx < r.x+r.w+1 &&
+            rx+rw+1 > r.x &&
+            ry < r.y+r.h+1 &&
+            ry+rh+1 > r.y
+        );
+
+        if(overlap) continue;
+
+        // 床
+        for(let y=ry;y<ry+rh;y++) {
+            for(let x=rx;x<rx+rw;x++) {
+                map[y][x]=".";
+            }
+        }
+
+        // 通路
+        if(rooms.length>0) {
+            let prev=rooms[rooms.length-1];
+
+            if(Math.random()<0.5) {
+                horizontalTunnel(prev.cx,room.cx,prev.cy);
+                verticalTunnel(prev.cy,room.cy,room.cx);
+            } else {
+                verticalTunnel(prev.cy,room.cy,prev.cx);
+                horizontalTunnel(prev.cx,room.cx,room.cy);
+            }
+        }
+
+        rooms.push(room);
+    }
+
+    // 部屋が足りなければ再生成
+    if(rooms.length<2) {
+        createMap();
+        return;
+    }
+
+    // プレイヤー
+    player={
+        x:rooms[0].cx,
+        y:rooms[0].cy,
+        hp:20,
+        maxhp:20,
+        atk:3
+    };
+
+    // 階段
+    const last=rooms[rooms.length-1];
+    map[last.cy][last.cx]=">";
+
+    // 敵・アイテム配置
+    for(let i=1;i<rooms.length;i++) {
+
+        let room=rooms[i];
+
+        if(Math.random()<0.75) {
+            let p=randomRoomPosition(room);
+
+            monsters.push(
+                createMonster(p.x,p.y)
+            );
+        }
+
+        if(Math.random()<0.7) {
+            let p=randomRoomPosition(room);
+
+            items.push({
+                x:p.x,
+                y:p.y,
+                type:Math.random()<0.7?"gold":"potion",
+                value:rand(5,15)
+            });
+        }
+    }
+}
+
+
+// 横通路
+function horizontalTunnel(x1,x2,y) {
+    for(let x=Math.min(x1,x2);x<=Math.max(x1,x2);x++) {
+        map[y][x]=".";
+    }
+}
+
+
+// 縦通路
+function verticalTunnel(y1,y2,x) {
+    for(let y=Math.min(y1,y2);y<=Math.max(y1,y2);y++) {
+        map[y][x]=".";
+    }
+}
+
+
+// 部屋内の空き座標
+function randomRoomPosition(room) {
+    let x,y;
+
+    do {
+        x=rand(room.x,room.x+room.w-1);
+        y=rand(room.y,room.y+room.h-1);
+    } while (
+        (x===player.x&&y===player.y) ||
+        monsterAt(x,y) ||
+        itemAt(x,y) ||
+        map[y][x]===">"
+    );
+
+    return {x,y};
+}
+
+
+// モンスター生成
+function createMonster(x,y) {
+
+    const types=[
+        ["k","Kobold",5,1],
+        ["o","Orc",8,2],
+        ["b","Bat",4,1],
+        ["T","Troll",12,3]
+    ];
+
+    let t=types[rand(0,types.length-1)];
+
+    return {
+        x:x,
+        y:y,
+        char:t[0],
+        name:t[1],
+        hp:t[2],
+        atk:t[3]
+    };
+}
+
+
+// 敵検索
+function monsterAt(x,y) {
+    return monsters.find(m=>m.x===x&&m.y===y);
+}
+
+
+// アイテム検索
+function itemAt(x,y) {
+    return items.find(i=>i.x===x&&i.y===y);
+}
+
+
+// 攻撃
+function attack(monster) {
+
+    let damage=rand(1,player.atk);
+
+    monster.hp-=damage;
+
+    log(`You hit ${monster.name} for ${damage} damage.`);
+
+    if(monster.hp<=0) {
+
+        log(`${monster.name} defeated!`);
+
+        xp+=3;
+        gold+=rand(0,3);
+
+        monsters=monsters.filter(m=>m!==monster);
+
+        // レベルアップ
+        if(xp>=10) {
+
+            xp-=10;
+            player.atk++;
+
+            player.maxhp+=3;
+            player.hp=Math.min(
+                player.maxhp,
+                player.hp+3
+            );
+
+            log("LEVEL UP! Attack increased!");
+        }
+    }
+}
+
+
+// プレイヤー移動
+function move(dx,dy) {
+
+    if(gameover) return;
+
+    let nx=player.x+dx;
+    let ny=player.y+dy;
+
+    if(nx<0||ny<0||nx>=W||ny>=H) return;
+
+    // 敵がいる場合は攻撃
+    let monster=monsterAt(nx,ny);
+
+    if(monster) {
+        attack(monster);
+        takeTurn();
+        return;
+    }
+
+    // 壁には移動できない
+    if(map[ny][nx]!=="."&&map[ny][nx]!==">") {
+        return;
+    }
+
+    player.x=nx;
+    player.y=ny;
+
+    // アイテム取得
+    let item=itemAt(nx,ny);
+
+    if(item) {
+
+        if(item.type==="gold") {
+
+            gold+=item.value;
+
+            log(`You found ${item.value} gold!`);
+
+        } else {
+
+            player.hp=Math.min(
+                player.maxhp,
+                player.hp+8
+            );
+
+            log("You drink a potion. +8 HP");
+        }
+
+        items=items.filter(i=>i!==item);
+    }
+
+    takeTurn();
+}
+
+
+// モンスター行動
+function takeTurn() {
+
+    if(gameover) return;
+
+    turns++;
+
+    for(let m of [...monsters]) {
+
+        let distance=
+            Math.abs(m.x-player.x)+
+            Math.abs(m.y-player.y);
+
+        // 隣接していれば攻撃
+        if(distance===1) {
+
+            let damage=rand(1,m.atk);
+
+            player.hp-=damage;
+
+            log(`${m.name} hits you for ${damage}.`);
+
+            if(player.hp<=0) {
+                endGame();
+                return;
+            }
+
+        } else {
+
+            // プレイヤーを追跡
+            if(Math.random()<0.65) {
+
+                let dx=player.x-m.x;
+                let dy=player.y-m.y;
+
+                if(Math.abs(dx)>Math.abs(dy)) {
+                    dy=0;
+                } else {
+                    dx=0;
+                }
+
+                dx=Math.sign(dx);
+                dy=Math.sign(dy);
+
+                let nx=m.x+dx;
+                let ny=m.y+dy;
+
+                if(
+                    map[ny]?.[nx]==="." &&
+                    !monsterAt(nx,ny) &&
+                    !(nx===player.x&&ny===player.y)
+                ) {
+                    m.x=nx;
+                    m.y=ny;
+                }
+            }
+        }
+    }
+
+    render();
+}
+
+
+// 階段
+function descend() {
+
+    if(gameover) return;
+
+    if(map[player.y][player.x]!==">") {
+        log("There are no stairs here.");
+        return;
+    }
+
+    depth++;
+
+    player.hp=Math.min(
+        player.maxhp,
+        player.hp+5
+    );
+
+    createMap();
+
+    log(`You descend to level ${depth}.`);
+
+    render();
+}
+
+
+// ゲームオーバー
+function endGame() {
+
+    gameover=true;
+
+    el("ovtitle").textContent="GAME OVER";
+
+    el("ovtext").textContent=
+        `Level ${depth} / Turns ${turns} / Gold ${gold}`;
+
+    el("overlay").style.display="flex";
+}
+
+
+// 描画
+function render() {
+
+    let output="";
+
+    for(let y=0;y<H;y++) {
+
+        for(let x=0;x<W;x++) {
+
+            let distance=
+                Math.abs(x-player.x)+
+                Math.abs(y-player.y);
+
+            // 視界
+            if(distance<=8) {
+                seen[y][x]=true;
+            }
+
+            if(!seen[y][x]||distance>8) {
+                output+=" ";
+                continue;
+            }
+
+            let char=map[y][x];
+
+            let monster=monsterAt(x,y);
+            let item=itemAt(x,y);
+
+            if(monster) {
+                char=monster.char;
+            }
+
+            if(item) {
+                char=item.type==="gold"?"$":"!";
+            }
+
+            if(x===player.x&&y===player.y) {
+                char="@";
+            }
+
+            output+=char;
+        }
+
+        output+="\n";
+    }
+
+    el("map").textContent=output;
+
+    el("depth").textContent=depth;
+    el("gold").textContent=gold;
+    el("hp").textContent=`${player.hp} / ${player.maxhp}`;
+    el("atk").textContent=player.atk;
+    el("xp").textContent=xp;
+    el("turns").textContent=turns;
+}
+
+
+// 再スタート
+function restart() {
+
+    depth=1;
+    gold=0;
+    xp=0;
+    turns=0;
+    gameover=false;
+
+    el("overlay").style.display="none";
+    el("log").innerHTML="";
+
+    createMap();
+
+    log("Welcome to the dungeon.");
+    log("Find the stairs and survive.");
+
+    render();
+}
+
+
+// キーボード
+document.addEventListener("keydown",function(e) {
+
+    let key=e.key.toLowerCase();
+
+    const controls={
+        "arrowup":[0,-1],
+        "w":[0,-1],
+        "k":[0,-1],
+
+        "arrowdown":[0,1],
+        "s":[0,1],
+        "j":[0,1],
+
+        "arrowleft":[-1,0],
+        "a":[-1,0],
+        "h":[-1,0],
+
+        "arrowright":[1,0],
+        "d":[1,0],
+        "l":[1,0]
+    };
+
+    if(controls[key]) {
+
+        e.preventDefault();
+
+        move(...controls[key]);
+
+    } else if(key===" ") {
+
+        e.preventDefault();
+
+        takeTurn();
+
+    } else if(key==="enter") {
+
+        descend();
+
+    } else if(key==="r") {
+
+        restart();
+    }
+});
+
+restart();
+
+</script>
+
+</body>
+</html>
