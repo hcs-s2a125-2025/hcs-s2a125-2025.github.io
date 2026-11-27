@@ -441,6 +441,16 @@ canvas {
   box-shadow: 0 0 12px rgba(255, 112, 166, 0.45);
 }
 
+/* 持ち込み装備セレクター */
+.gear-select { width: 100%; background: rgba(12, 9, 28, 0.78); border: 1px solid rgba(255, 209, 102, 0.28); border-radius: 9px; padding: 5px 8px; }
+.gear-title { font-size: 0.72rem; font-weight: 700; color: #ffd166; text-align: center; margin-bottom: 4px; }
+.gear-grid { display: grid; grid-template-columns: repeat(5, 32px); justify-content: center; gap: 4px; }
+.gear-btn { width: 32px; height: 30px; font-size: 1.05rem; color: #f3f6ff; border: 1px solid rgba(255,255,255,.2); border-radius: 7px; background: rgba(12,9,28,.95); cursor: pointer; }
+.gear-btn:hover { border-color: #ffd166; transform: translateY(-1px); }
+.p1 .gear-btn.active { border: 2px solid #72efdd; background: rgba(114,239,221,.2); }
+.p2 .gear-btn.active { border: 2px solid #ff70a6; background: rgba(255,112,166,.2); }
+.gear-info { color: #c8d3f0; font-size: 0.65rem; line-height: 1.25; text-align: center; min-height: 1.5em; margin-top: 4px; }
+
 .ability-box {
   width: 100%;
   background: rgba(12, 9, 28, 0.78);
