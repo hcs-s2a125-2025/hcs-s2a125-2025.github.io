@@ -2380,6 +2380,7 @@ function stepFighter(f, input, dt, platforms) {
     f.specialCooldown = Math.max(0, f.specialCooldown - dt * (f.gear.specialCooldownRate || 1));
   }
 
+  if (f.attackLockTimer > 0) { input.left = false; input.right = false; input.jumpPressed = false; f.vx *= 0.78; }
   // 攻撃チャージ＆オートチャージ連射＆フルオート攻撃アシスト
   const effectivePulseHeld = input.pulseHeld || assist.fullAuto;
 
@@ -2637,6 +2638,7 @@ function update(dt) {
   }
 
   for (let i = hugTugEffects.length - 1; i >= 0; i--) { hugTugEffects[i].life -= dt; if (hugTugEffects[i].life <= 0) hugTugEffects.splice(i, 1); }
+  for (let i=hugTugEffects.length-1;i>=0;i--) { hugTugEffects[i].life-=dt; if(hugTugEffects[i].life<=0)hugTugEffects.splice(i,1); }
   if (screenMode === "battle" && fighters.length === 2 && countdownTimer <= 0 && hitStopTimer <= 0) {
     const stage = getCurrentStage();
     stepFighter(fighters[0], p1Input, dt, stage.platforms);
@@ -3912,6 +3914,11 @@ function drawPulsesAndParticles() {
       ctx.font = '30px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif'; ctx.textAlign = "center"; ctx.textBaseline = "middle";
       ctx.fillText("🧸", fighter.x-20, fighter.y+fighter.h/2); ctx.fillText("🧸", fighter.x+fighter.w+20, fighter.y+fighter.h/2); ctx.restore();
     }
+  }
+  for (const tug of hugTugEffects) {
+    ctx.save(); ctx.globalAlpha = tug.life/tug.maxLife; ctx.strokeStyle="#ff82bd"; ctx.lineWidth=9; ctx.lineCap="round";
+    ctx.beginPath(); ctx.moveTo(tug.x1,tug.y1); ctx.quadraticCurveTo((tug.x1+tug.x2)/2,tug.y1-25,tug.x2,tug.y2); ctx.stroke();
+    ctx.font='24px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif'; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("🫂",(tug.x1+tug.x2)/2,(tug.y1+tug.y2)/2-18); ctx.restore();
   }
   for (const sw of shockwaves) {
     const lifeRatio = Math.max(0, sw.life / sw.maxLife);
