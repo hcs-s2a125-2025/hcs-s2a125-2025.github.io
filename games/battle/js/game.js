@@ -252,7 +252,7 @@ function updateGearInfoUI() {
     const gear = selected ? EQUIPMENT_DEFS[selected] : null;
     const jumpGearBlocked = !!(gear && gear.jumpBonus && CHARACTER_DEFS[selectedCharacter]?.noAirJump);
     info.textContent = gear
-      ? `${gear.emoji} ${gear.name}：${gear.desc}${jumpGearBlocked ? '（🤕のパッシブにより空中ジャンプ効果は無効）' : ''`
+      ? `${gear.emoji} ${gear.name}：${gear.desc}${jumpGearBlocked ? '（🤕のパッシブにより空中ジャンプ効果は無効）' : ''}`
       : "装備なし：キャラクター本来の性能で戦う";
   };
   update(p1GearGrid, p1GearInfo, selectedGearP1, selectedP1);
