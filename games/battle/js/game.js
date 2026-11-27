@@ -116,6 +116,8 @@ pauseP2AutoAimEl.addEventListener("change", (e) => { assistOptions.p2.autoAim = 
 p2FullAutoEl.addEventListener("change", (e) => { assistOptions.p2.fullAuto = e.target.checked; syncAssistUI(); });
 pauseP2FullAutoEl.addEventListener("change", (e) => { assistOptions.p2.fullAuto = e.target.checked; syncAssistUI(); });
 let selectedStageIndex = 0;
+let activeBattleStage = null;
+let lastCityTimeTheme = null;
 let selectedP1 = "🤯";
 let selectedP2 = "💩";
 let selectedGearP1 = null;
@@ -155,7 +157,69 @@ function refreshSoundBtn() {
   soundBtn.textContent = Sound.isMuted() ? "🔇" : "🔊";
 }
 
+const CITY_TIME_VARIANTS = [
+  {
+    theme: "city_day",
+    label: "☀️ 昼",
+    palette: {
+      bgTop: "#76b8e8", bgBottom: "#d0b5a6",
+      floorFill: "#202d3b", floorTop: "#405568", floorBottom: "#182532", floorAccent: "#71d4e8",
+      shelfFill: "#334b5e", shelfAccent: "#9be5ec", wallFill: "#243849", wallAccent: "#9be5ec"
+    }
+  },
+  {
+    theme: "city_evening",
+    label: "🌆 夕方",
+    palette: {
+      bgTop: "#514d83", bgBottom: "#f29b78",
+      floorFill: "#30243d", floorTop: "#61404d", floorBottom: "#211a30", floorAccent: "#ffad83",
+      shelfFill: "#493047", shelfAccent: "#ffc18f", wallFill: "#392841", wallAccent: "#ffad83"
+    }
+  },
+  {
+    theme: "city_sunset",
+    label: "🌇 夕焼け",
+    palette: {
+      bgTop: "#583c76", bgBottom: "#f18b68",
+      floorFill: "#39243b", floorTop: "#70404b", floorBottom: "#281b32", floorAccent: "#ff9c75",
+      shelfFill: "#553344", shelfAccent: "#ffd18e", wallFill: "#43283a", wallAccent: "#ffb27c"
+    }
+  },
+  {
+    theme: "city_night",
+    label: "🌃 深夜",
+    palette: {
+      bgTop: "#101b3d", bgBottom: "#30234e",
+      floorFill: "#171c36", floorTop: "#30385b", floorBottom: "#101528", floorAccent: "#8a9cff",
+      shelfFill: "#252d50", shelfAccent: "#78e1ff", wallFill: "#202744", wallAccent: "#a28cff"
+    }
+  }
+];
+
+function prepareBattleStage() {
+  const baseStage = STAGES[selectedStageIndex];
+  if (baseStage.id !== "city-arena") {
+    activeBattleStage = baseStage;
+    return activeBattleStage;
+  }
+
+  // Avoid repeating the same time of day in consecutive city matches.
+  const choices = CITY_TIME_VARIANTS.filter((variant) => variant.theme !== lastCityTimeTheme);
+  const variant = choices[Math.floor(Math.random() * choices.length)];
+  lastCityTimeTheme = variant.theme;
+  activeBattleStage = {
+    ...baseStage,
+    ...variant.palette,
+    theme: variant.theme,
+    timeLabel: variant.label
+  };
+  return activeBattleStage;
+}
+
 function getCurrentStage() {
+  if ((screenMode === "battle" || screenMode === "result") && activeBattleStage) {
+    return activeBattleStage;
+  }
   return STAGES[selectedStageIndex];
 }
 
@@ -298,114 +362,269 @@ function drawThemedBackdrop(targetCtx, stage, elapsed = 0) {
   }
 
   if (theme === "factory") {
-    // Industrial skyline: layered warehouses, stacks, ducts and drifting steam.
-    drawBackdropPolygon(targetCtx, [[0,330],[85,285],[180,316],[270,274],[380,316],[480,280],[610,318],[730,275],[860,312],[960,278],[960,468],[0,468]], "rgba(28,39,42,0.68)");
-    const factories = [[28,190,112],[260,210,145],[575,175,118],[790,185,138]];
-    for (const [x,w,h] of factories) {
-      const y = 438 - h;
-      targetCtx.fillStyle = "rgba(26,35,38,0.92)";
-      targetCtx.fillRect(x,y,w,h);
-      drawBackdropPolygon(targetCtx, [[x,y+16],[x+28,y-4],[x+62,y+16],[x+92,y-5],[x+126,y+16],[x+w,y+16],[x+w,y+31],[x,y+31]], "rgba(47,59,60,0.98)");
-      targetCtx.fillStyle = "rgba(255,183,91,0.62)";
-      for (let wx=x+16; wx<x+w-12; wx+=30) {
-        for (let wy=y+48; wy<430; wy+=34) targetCtx.fillRect(wx,wy,10,13);
-      }
-      targetCtx.fillStyle = "rgba(99,113,110,0.95)";
-      targetCtx.fillRect(x+w*0.68,y-72,25,76);
-      targetCtx.fillStyle = "rgba(37,48,51,1)";
-      targetCtx.fillRect(x+w*0.68-4,y-76,33,8);
+    // A steel mill, not another row of buildings: blast furnace, chimneys and pipework.
+    drawBackdropPolygon(targetCtx,
+      [[0,390],[95,360],[175,378],[260,345],[360,374],[470,348],[590,382],[710,350],[820,378],[960,344],[960,468],[0,468]],
+      "rgba(20,31,34,0.9)");
+
+    // Main mill hall with a saw-tooth roof profile.
+    drawBackdropPolygon(targetCtx,
+      [[105,438],[105,292],[190,244],[255,292],[340,235],[405,292],[485,250],[555,292],[650,250],[730,292],[815,260],[880,300],[880,455]],
+      "#26383b", "#536365", 4);
+    targetCtx.fillStyle = "rgba(12,22,25,0.72)";
+    targetCtx.fillRect(135,320,715,130);
+    targetCtx.strokeStyle = "rgba(128,151,145,0.38)";
+    targetCtx.lineWidth = 5;
+    for (let x=155;x<850;x+=58) {
+      targetCtx.beginPath(); targetCtx.moveTo(x,310); targetCtx.lineTo(x,450); targetCtx.stroke();
     }
-    for (const [sx, sy, phase] of [[158,276,0],[622,246,1.8],[845,255,3.1]]) {
-      const drift = Math.sin(elapsed * 0.55 + phase) * 12;
-      targetCtx.fillStyle = "rgba(211,220,211,0.12)";
-      for (let k=0;k<4;k++) {
+    targetCtx.fillStyle = "rgba(255,182,91,0.56)";
+    for (let x=172;x<830;x+=82) {
+      targetCtx.fillRect(x,355,34,25);
+      targetCtx.fillRect(x+7,390,20,13);
+    }
+
+    // Four unmistakable industrial chimneys with collars and smoke.
+    for (const [x,top,w] of [[82,170,36],[225,118,42],[742,154,40],[866,205,32]]) {
+      targetCtx.fillStyle = "#536366";
+      targetCtx.fillRect(x,top,w,438-top);
+      targetCtx.fillStyle = "#788987";
+      targetCtx.fillRect(x-5,top,w+10,12);
+      targetCtx.fillStyle = "#263538";
+      targetCtx.fillRect(x-8,top-8,w+16,9);
+      targetCtx.fillStyle = "rgba(255,180,83,0.48)";
+      targetCtx.fillRect(x+7,top+28,5,8);
+      targetCtx.fillRect(x+w-12,top+52,5,8);
+    }
+    for (const [sx,sy,phase] of [[98,160,0],[246,108,1.4],[762,144,2.7],[882,195,4.1]]) {
+      const drift=Math.sin(elapsed*0.6+phase)*13;
+      targetCtx.fillStyle="rgba(211,224,218,0.14)";
+      for(let k=0;k<5;k++) {
         targetCtx.beginPath();
-        targetCtx.arc(sx + drift + k*10, sy-k*18, 11+k*2, 0, Math.PI*2);
+        targetCtx.arc(sx+drift+k*9,sy-k*17,10+k*2.5,0,Math.PI*2);
         targetCtx.fill();
       }
     }
-    targetCtx.strokeStyle = "rgba(255,179,88,0.28)";
-    targetCtx.lineWidth = 7;
+
+    // Molten furnace opening and its orange heat glow.
+    const furnaceGlow=targetCtx.createRadialGradient(482,365,8,482,365,120);
+    furnaceGlow.addColorStop(0,"rgba(255,119,45,0.52)");
+    furnaceGlow.addColorStop(1,"rgba(255,119,45,0)");
+    targetCtx.fillStyle=furnaceGlow;
+    targetCtx.fillRect(350,245,270,220);
+    targetCtx.fillStyle="#172528";
+    targetCtx.fillRect(414,315,136,136);
+    targetCtx.strokeStyle="#87918a";
+    targetCtx.lineWidth=9;
+    targetCtx.strokeRect(414,315,136,136);
+    targetCtx.fillStyle="#ff9b45";
+    targetCtx.fillRect(434,352,96,82);
+    targetCtx.fillStyle="rgba(255,224,135,0.82)";
+    targetCtx.fillRect(453,366,58,58);
+
+    // Heavy pipes run across the mill and connect the pressure tanks.
+    targetCtx.lineCap="round";
+    targetCtx.strokeStyle="#9a9f91";
+    targetCtx.lineWidth=13;
     targetCtx.beginPath();
-    targetCtx.moveTo(0,390); targetCtx.lineTo(VIEW_WIDTH,390);
+    targetCtx.moveTo(0,270); targetCtx.lineTo(145,270); targetCtx.lineTo(145,225);
+    targetCtx.lineTo(350,225); targetCtx.lineTo(350,285);
+    targetCtx.moveTo(590,285); targetCtx.lineTo(590,215); targetCtx.lineTo(960,215);
     targetCtx.stroke();
-    targetCtx.strokeStyle = "rgba(30,42,44,0.9)";
-    targetCtx.lineWidth = 3;
-    for (let x=25;x<VIEW_WIDTH;x+=95) {
-      targetCtx.beginPath(); targetCtx.moveTo(x,390); targetCtx.lineTo(x+32,410); targetCtx.stroke();
+    targetCtx.strokeStyle="rgba(24,39,41,0.95)";
+    targetCtx.lineWidth=5;
+    targetCtx.beginPath();
+    targetCtx.moveTo(0,270); targetCtx.lineTo(145,270); targetCtx.lineTo(145,225);
+    targetCtx.lineTo(350,225); targetCtx.lineTo(350,285);
+    targetCtx.moveTo(590,285); targetCtx.lineTo(590,215); targetCtx.lineTo(960,215);
+    targetCtx.stroke();
+
+    // Pressure tanks, valves and a conveyor carrying dark ore.
+    for (const [x,y,w,h] of [[22,340,78,104],[660,330,64,114],[890,345,58,99]]) {
+      targetCtx.fillStyle="#657572";
+      targetCtx.fillRect(x,y,w,h);
+      targetCtx.fillStyle="#879894";
+      targetCtx.fillRect(x+8,y-8,w-16,10);
+      targetCtx.fillStyle="#253638";
+      targetCtx.fillRect(x+10,y+20,w-20,18);
+      targetCtx.strokeStyle="#263639";
+      targetCtx.lineWidth=4;
+      targetCtx.beginPath(); targetCtx.arc(x+w/2,y+55,13,0,Math.PI*2); targetCtx.stroke();
+    }
+    targetCtx.strokeStyle="#18282b";
+    targetCtx.lineWidth=15;
+    targetCtx.beginPath(); targetCtx.moveTo(80,432); targetCtx.lineTo(300,382); targetCtx.lineTo(385,382); targetCtx.stroke();
+    targetCtx.strokeStyle="#d38a48";
+    targetCtx.lineWidth=3;
+    targetCtx.beginPath(); targetCtx.moveTo(80,423); targetCtx.lineTo(300,373); targetCtx.lineTo(385,373); targetCtx.stroke();
+    targetCtx.fillStyle="#40484a";
+    for(const [x,y,r] of [[130,406,12],[170,397,9],[220,384,13],[270,374,10]]) {
+      targetCtx.beginPath(); targetCtx.arc(x,y,r,0,Math.PI*2); targetCtx.fill();
+    }
+
+    // A few sparks make the machinery feel active.
+    targetCtx.fillStyle="rgba(255,205,105,0.82)";
+    for(let i=0;i<9;i++) {
+      const x=420+((i*47+Math.floor(elapsed*38))%150);
+      const y=300+((i*29+Math.floor(elapsed*24))%126);
+      targetCtx.fillRect(x,y,2,4);
     }
     return;
   }
 
   if (theme === "castle") {
-    drawBackdropStars(targetCtx, "rgba(221,226,255,0.52)");
-    targetCtx.fillStyle = "rgba(224,231,244,0.78)";
-    targetCtx.beginPath(); targetCtx.arc(790,96,35,0,Math.PI*2); targetCtx.fill();
-    drawBackdropPolygon(targetCtx, [[0,355],[110,240],[220,345],[340,220],[480,350],[620,235],[760,342],[880,230],[960,330],[960,468],[0,468]], "rgba(30,43,65,0.68)");
-    targetCtx.fillStyle = "rgba(31,38,58,0.97)";
-    targetCtx.fillRect(330,310,300,145);
-    targetCtx.fillRect(385,250,190,205);
-    targetCtx.fillRect(445,202,78,253);
-    // Japanese castle roofs.
-    for (const [x,y,w] of [[300,300,170],[490,300,170],[370,238,220],[426,192,116]]) {
-      drawBackdropPolygon(targetCtx, [[x,y+18],[x+w*0.18,y],[x+w*0.82,y],[x+w,y+18],[x+w*0.74,y+13],[x+w*0.5,y+23],[x+w*0.26,y+13]], "#6d7182", "#b7b6b4", 2);
+    drawBackdropStars(targetCtx, "rgba(221,226,255,0.62)");
+    targetCtx.fillStyle = "rgba(225,234,250,0.92)";
+    targetCtx.beginPath(); targetCtx.arc(790,96,36,0,Math.PI*2); targetCtx.fill();
+    targetCtx.fillStyle=stage.bgTop;
+    targetCtx.beginPath(); targetCtx.arc(806,86,33,0,Math.PI*2); targetCtx.fill();
+
+    // Remote mountain valley and a dark pine forest, with no city skyline.
+    drawBackdropPolygon(targetCtx,
+      [[0,354],[105,238],[205,350],[330,205],[465,358],[590,230],[720,350],[835,215],[960,345],[960,468],[0,468]],
+      "rgba(29,43,63,0.78)");
+    for(const [x,y,scale] of [[55,370,0.9],[155,385,0.7],[770,382,0.86],[890,378,1.0]]) {
+      targetCtx.fillStyle="#142b2b";
+      targetCtx.fillRect(x-4,y,8,70);
+      for(let tier=0;tier<3;tier++) {
+        const yy=y-tier*22;
+        drawBackdropPolygon(targetCtx,[[x,yy-38*scale],[x-22*scale,yy+5],[x+22*scale,yy+5]],"#183a34");
+      }
     }
-    targetCtx.fillStyle = "rgba(202,213,231,0.8)";
-    for (const x of [350,385,565,600]) {
-      targetCtx.fillRect(x,335,10,24);
-      targetCtx.fillRect(x,383,10,24);
+
+    // Stone base and white-plastered Japanese keep.
+    drawBackdropPolygon(targetCtx,[[260,455],[300,390],[660,390],[700,455]],"#454b5a","#8d8d91",3);
+    targetCtx.fillStyle="#d7d9d8";
+    targetCtx.fillRect(318,320,324,125);
+    targetCtx.fillRect(356,267,248,125);
+    targetCtx.fillRect(402,214,156,105);
+    targetCtx.fillRect(438,170,84,62);
+    targetCtx.fillStyle="#566071";
+    targetCtx.fillRect(332,337,296,108);
+    targetCtx.fillStyle="#e0e3e2";
+    targetCtx.fillRect(342,326,276,112);
+    targetCtx.fillRect(373,273,214,112);
+    targetCtx.fillRect(416,220,128,94);
+    targetCtx.fillRect(448,176,64,56);
+
+    // Layered curved tile roofs and upward tips identify the Japanese castle silhouette.
+    const roofs=[[285,315,390],[335,263,290],[383,211,194],[424,166,112]];
+    for(const [x,y,w] of roofs) {
+      drawBackdropPolygon(targetCtx,
+        [[x,y+20],[x+28,y+4],[x+w*0.18,y-7],[x+w*0.82,y-7],[x+w-28,y+4],[x+w,y+20],
+         [x+w-18,y+16],[x+w*0.72,y+29],[x+w*0.5,y+34],[x+w*0.28,y+29],[x+18,y+16]],
+        "#313b50","#9ca4af",2);
+      targetCtx.strokeStyle="rgba(230,233,236,0.55)";
+      targetCtx.lineWidth=2;
+      targetCtx.beginPath(); targetCtx.moveTo(x+30,y+5); targetCtx.lineTo(x+w-30,y+5); targetCtx.stroke();
     }
-    targetCtx.fillStyle = "#c1d4e5";
-    targetCtx.fillRect(470,355,20,100);
-    targetCtx.fillStyle = "rgba(255,183,106,0.65)";
-    targetCtx.fillRect(470,388,20,36);
-    targetCtx.strokeStyle = "rgba(226,198,151,0.75)";
-    targetCtx.lineWidth = 3;
-    targetCtx.beginPath(); targetCtx.moveTo(480,194); targetCtx.lineTo(480,145); targetCtx.stroke();
-    drawBackdropPolygon(targetCtx, [[480,148],[520,160],[480,172]], "#d76c64");
+    // Windows, white gables and a red entry gate.
+    targetCtx.fillStyle="#24334a";
+    for(const [x,y,w] of [[355,350,22],[583,350,22],[391,292,20],[549,292,20],[446,236,17],[497,236,17],[466,188,10]]) {
+      targetCtx.fillRect(x,y,w,20);
+    }
+    targetCtx.fillStyle="#a84e4d";
+    targetCtx.fillRect(454,382,52,63);
+    targetCtx.fillStyle="#d8a56b";
+    targetCtx.fillRect(466,382,5,63);
+    targetCtx.fillRect(490,382,5,63);
+    targetCtx.strokeStyle="#d9c29a";
+    targetCtx.lineWidth=3;
+    targetCtx.beginPath(); targetCtx.moveTo(480,169); targetCtx.lineTo(480,126); targetCtx.stroke();
+    drawBackdropPolygon(targetCtx,[[480,128],[522,143],[480,158]],"#c65f58");
+
+    // Stone ramparts and a quiet moat at the bottom of the valley.
+    targetCtx.fillStyle="rgba(114,147,165,0.28)";
+    targetCtx.fillRect(0,438,VIEW_WIDTH,30);
+    targetCtx.strokeStyle="rgba(190,208,214,0.28)";
+    targetCtx.lineWidth=2;
+    for(let x=0;x<VIEW_WIDTH;x+=44) {
+      targetCtx.beginPath(); targetCtx.moveTo(x,447); targetCtx.lineTo(x+22,447); targetCtx.stroke();
+    }
     return;
   }
 
   if (theme === "construction") {
-    // Unfinished concrete frames and a tower crane.
-    targetCtx.fillStyle = "rgba(48,62,67,0.22)";
-    targetCtx.fillRect(70,275,210,190);
-    targetCtx.fillRect(710,310,170,155);
-    targetCtx.strokeStyle = "rgba(48,58,61,0.85)";
-    targetCtx.lineWidth = 8;
-    for (const baseX of [92,145,198,735,790,845]) {
-      targetCtx.beginPath(); targetCtx.moveTo(baseX,270); targetCtx.lineTo(baseX,468); targetCtx.stroke();
+    // Open construction site: exposed steel frame, scaffolding and a working tower crane.
+    drawBackdropPolygon(targetCtx,
+      [[0,420],[90,382],[190,406],[285,365],[390,410],[520,370],[635,405],[770,360],[875,398],[960,370],[960,468],[0,468]],
+      "rgba(93,89,72,0.42)");
+
+    // Two unfinished structures made from visible beams instead of solid city blocks.
+    targetCtx.strokeStyle="#38494d";
+    targetCtx.lineWidth=11;
+    for(const [left,right,top,bottom] of [[78,330,242,440],[365,575,302,440]]) {
+      for(let x=left;x<=right;x+=52) {
+        targetCtx.beginPath(); targetCtx.moveTo(x,top); targetCtx.lineTo(x,bottom); targetCtx.stroke();
+      }
+      for(let y=top+12;y<bottom;y+=54) {
+        targetCtx.beginPath(); targetCtx.moveTo(left,y); targetCtx.lineTo(right,y); targetCtx.stroke();
+      }
+      targetCtx.lineWidth=5;
+      for(let x=left;x<right-52;x+=104) {
+        for(let y=top+12;y<bottom-30;y+=54) {
+          targetCtx.beginPath(); targetCtx.moveTo(x,y); targetCtx.lineTo(x+52,y+54); targetCtx.stroke();
+          targetCtx.beginPath(); targetCtx.moveTo(x+52,y); targetCtx.lineTo(x,y+54); targetCtx.stroke();
+        }
+      }
+      targetCtx.lineWidth=11;
     }
-    for (const y of [300,355,410]) {
-      targetCtx.beginPath(); targetCtx.moveTo(80,y); targetCtx.lineTo(280,y); targetCtx.stroke();
-      targetCtx.beginPath(); targetCtx.moveTo(725,y+10); targetCtx.lineTo(875,y+10); targetCtx.stroke();
+
+    // Plank scaffolding and temporary guard rails.
+    targetCtx.strokeStyle="rgba(196,157,99,0.9)";
+    targetCtx.lineWidth=4;
+    for(let y=280;y<425;y+=46) {
+      targetCtx.beginPath(); targetCtx.moveTo(60,y); targetCtx.lineTo(348,y); targetCtx.stroke();
     }
-    targetCtx.strokeStyle = "#e6b34e";
-    targetCtx.lineWidth = 7;
-    targetCtx.beginPath(); targetCtx.moveTo(585,145); targetCtx.lineTo(915,145); targetCtx.stroke();
-    targetCtx.lineWidth = 9;
-    targetCtx.beginPath(); targetCtx.moveTo(720,145); targetCtx.lineTo(720,430); targetCtx.stroke();
-    targetCtx.lineWidth = 4;
+    for(let x=62;x<350;x+=48) {
+      targetCtx.beginPath(); targetCtx.moveTo(x,265); targetCtx.lineTo(x,445); targetCtx.stroke();
+    }
+
+    // Tower crane mast, jib, counter-jib and hanging hook.
+    targetCtx.strokeStyle="#dcae48";
+    targetCtx.lineWidth=12;
+    targetCtx.beginPath(); targetCtx.moveTo(765,115); targetCtx.lineTo(765,444); targetCtx.stroke();
+    targetCtx.lineWidth=8;
+    targetCtx.beginPath(); targetCtx.moveTo(330,132); targetCtx.lineTo(920,132); targetCtx.stroke();
+    targetCtx.lineWidth=5;
     targetCtx.beginPath();
-    targetCtx.moveTo(720,145); targetCtx.lineTo(650,205);
-    targetCtx.moveTo(720,145); targetCtx.lineTo(790,205);
-    targetCtx.moveTo(650,205); targetCtx.lineTo(790,205);
+    targetCtx.moveTo(765,115); targetCtx.lineTo(690,132);
+    targetCtx.moveTo(765,115); targetCtx.lineTo(845,132);
+    targetCtx.moveTo(690,132); targetCtx.lineTo(765,185);
+    targetCtx.moveTo(845,132); targetCtx.lineTo(765,185);
+    targetCtx.moveTo(330,132); targetCtx.lineTo(370,180);
+    targetCtx.moveTo(920,132); targetCtx.lineTo(880,180);
     targetCtx.stroke();
-    targetCtx.strokeStyle = "rgba(48,58,61,0.8)";
-    targetCtx.lineWidth = 3;
-    for (let x=590;x<910;x+=32) {
-      targetCtx.beginPath(); targetCtx.moveTo(x,145); targetCtx.lineTo(x+25,205); targetCtx.stroke();
+    targetCtx.strokeStyle="rgba(42,53,53,0.85)";
+    targetCtx.lineWidth=2;
+    for(let x=350;x<920;x+=34) {
+      targetCtx.beginPath(); targetCtx.moveTo(x,132); targetCtx.lineTo(x+28,176); targetCtx.stroke();
     }
-    targetCtx.strokeStyle = "#343c3d";
-    targetCtx.lineWidth = 3;
-    targetCtx.beginPath(); targetCtx.moveTo(790,145); targetCtx.lineTo(790,265); targetCtx.stroke();
-    targetCtx.fillStyle = "#f3c653";
-    targetCtx.fillRect(780,258,20,8);
-    targetCtx.fillStyle = "#394345";
-    targetCtx.fillRect(40,435,880,13);
-    for (let x=45;x<920;x+=34) {
-      targetCtx.fillStyle = "#e7b64e";
-      targetCtx.fillRect(x,435,17,5);
+    targetCtx.strokeStyle="#333f42";
+    targetCtx.lineWidth=3;
+    targetCtx.beginPath(); targetCtx.moveTo(540,132); targetCtx.lineTo(540,250); targetCtx.stroke();
+    targetCtx.fillStyle="#e0b34b";
+    targetCtx.fillRect(528,246,24,15);
+    targetCtx.strokeStyle="#333f42";
+    targetCtx.lineWidth=5;
+    targetCtx.beginPath(); targetCtx.moveTo(540,261); targetCtx.lineTo(540,278); targetCtx.lineTo(552,286); targetCtx.stroke();
+
+    // Concrete stacks, rebar and a striped site barricade.
+    targetCtx.fillStyle="#737b79";
+    targetCtx.fillRect(610,392,95,48);
+    targetCtx.fillRect(720,410,72,30);
+    targetCtx.strokeStyle="#2e3d40";
+    targetCtx.lineWidth=3;
+    for(let x=620;x<700;x+=16) {
+      targetCtx.beginPath(); targetCtx.moveTo(x,382); targetCtx.lineTo(x,410); targetCtx.stroke();
+    }
+    targetCtx.fillStyle="#3e4947";
+    targetCtx.fillRect(34,438,892,10);
+    for(let x=42;x<920;x+=44) {
+      targetCtx.fillStyle="#efbd4d";
+      targetCtx.beginPath();
+      targetCtx.moveTo(x,438); targetCtx.lineTo(x+18,438); targetCtx.lineTo(x+32,448); targetCtx.lineTo(x+14,448);
+      targetCtx.closePath(); targetCtx.fill();
     }
     return;
   }
@@ -777,6 +996,7 @@ function createFighter(id, label, emoji, gearEmoji, x, facing, accentColor) {
 }
 
 function startBattle() {
+  prepareBattleStage();
   clearInputs();
   pulses = [];
   shockwaves = [];
@@ -811,7 +1031,8 @@ function startBattle() {
   charScreen.classList.add("hidden");
   resultOverlay.classList.add("hidden");
   battleHud.classList.remove("hidden");
-  stageHud.textContent = `🏟️ ${getCurrentStage().name}`;
+  const currentStage = getCurrentStage();
+  stageHud.textContent = `🏟️ ${currentStage.name}${currentStage.timeLabel ? ` ${currentStage.timeLabel}` : ""}`;
   updateHud();
 }
 
@@ -981,7 +1202,9 @@ function updateHud() {
   p1Hud.innerHTML = `1P ${f1.emoji}${f1.gearEmoji || ""}${statusIcons(f1)} ${hearts(f1)} ${formatSpBadge(f1, "Q")} ${assistBadge("p1")} ${wins(scores.p1)}`;
   p2Hud.innerHTML = `${wins(scores.p2)} ${assistBadge("p2")} 2P ${f2.emoji}${f2.gearEmoji || ""}${statusIcons(f2)} ${hearts(f2)} ${formatSpBadge(f2, "左Click")}`;
   const timeText = suddenDeath ? "💀 SUDDEN DEATH" : `⏱ ${Math.max(0, Math.ceil(matchTimer))}`;
-  stageHud.textContent = `🏟️ ${getCurrentStage().name} ｜ ${timeText}`;
+  const currentStage = getCurrentStage();
+  const stageLabel = `${currentStage.name}${currentStage.timeLabel ? ` ${currentStage.timeLabel}` : ""}`;
+  stageHud.textContent = `🏟️ ${stageLabel} ｜ ${timeText}`;
   stageHud.classList.toggle("warn", suddenDeath || (screenMode === "battle" && countdownTimer <= 0 && matchTimer <= 10));
 }
 
