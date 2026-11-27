@@ -524,6 +524,20 @@ const SELECTABLE_CHARACTERS = Object.keys(CHARACTER_DEFS).filter(
   (emoji) => !CHARACTER_DEFS[emoji].hiddenInSelect
 );
 
+// バトル開始前に選べる持ち込み装備（1人1つ）
+const EQUIPMENT_DEFS = {
+  "💰": { emoji: "💰", name: "ゴールドチャージ", desc: "攻撃チャージが20%速くなる", chargeMultiplier: 0.8 },
+  "⚖️": { emoji: "⚖️", name: "バランスシールド", desc: "吹っ飛びを25%軽減、移動速度は少し低下", knockbackMultiplier: 0.75, moveSpeedMultiplier: 0.92 },
+  "🍑": { emoji: "🍑", name: "ピーチの祝福", desc: "最大HPが1増える", maxHpBonus: 1 },
+  "☢️": { emoji: "☢️", name: "ラジエーション", desc: "攻撃弾が大きくなり、威力の吹っ飛びも少し増加", pulseRadiusMultiplier: 1.22, knockbackMultiplier: 1.08 },
+  "🎃": { emoji: "🎃", name: "パンプキン・ブースト", desc: "通常攻撃のクールダウンを15%短縮", pulseCooldownMultiplier: 0.85 },
+  "🪓": { emoji: "🪓", name: "ヘビーアックス", desc: "攻撃の吹っ飛ばし力が35%増加、連射は少し遅くなる", knockbackMultiplier: 1.35, pulseCooldownMultiplier: 1.12 },
+  "⏳": { emoji: "⏳", name: "時の砂", desc: "特殊技のクールダウンが25%速く回復", specialCooldownRate: 1.33 },
+  "🪃": { emoji: "🪃", name: "ブーメラン・ギア", desc: "攻撃弾の速度が25%上がり、射程も少し伸びる", pulseSpeedMultiplier: 1.25, pulseRangeMultiplier: 1.12 },
+  "🪅": { emoji: "🪅", name: "ピニャータ・ジャンプ", desc: "空中ジャンプ回数が1回増える", jumpBonus: 1 }
+};
+const EQUIPMENT_CHOICES = [null, ...Object.keys(EQUIPMENT_DEFS)];
+
 const ITEM_DEFS = {
   heal: {
     type: "heal",
