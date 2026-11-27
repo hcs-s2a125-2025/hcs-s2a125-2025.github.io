@@ -2176,7 +2176,8 @@ function update(dt) {
             pl.playerColor = target.accentColor;
             spawnParticles(pl.x, pl.y, 10, "#72efdd");
           } else {
-            hitFighter(target, pl.x, pl.knockVx || 380, pl.chillDuration || 0);
+            const impactKnockback = (pl.knockVx || 380) * (pl.impactBurstRadius > 0 ? 1.18 : 1);
+            hitFighter(target, pl.x, impactKnockback, pl.chillDuration || 0);
             if (pl.impactBurstRadius > 0 || pl.slimePoolDuration > 0) {
               spawnProjectileImpact(pl, pl.x, pl.y, target.id);
             }
