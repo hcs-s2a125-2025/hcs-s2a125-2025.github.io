@@ -1936,6 +1936,33 @@ function triggerSpecialAction(fighter) {
     }
     spawnParticles(cx + fighter.facing * 24, cy, 18, pColor);
     spawnParticles(cx + fighter.facing * 24, cy, 10, subGlow);
+  } else if (type === "monocle_volley") {
+    fighter.specialCooldown = fighter.def.specialCooldown;
+    spawnPopup(cx, cy - 28, "🧐 MONOCLE OFF!", "#8bd3ff");
+    const target = fighters.find((other) => other.id !== fighter.id);
+    const tx = target ? target.x + target.w / 2 : cx + fighter.facing * 300;
+    const ty = target ? target.y + target.h / 2 : cy;
+    for (let n = 0; n < 3; n++) {
+      const aimX = tx + (Math.random() - 0.5) * 95;
+      const aimY = ty + (Math.random() - 0.5) * 90;
+      const angle = Math.atan2(aimY - cy, aimX - cx);
+      pulses.push({ ownerId: fighter.id, playerColor: fighter.accentColor, style: "monocle", x: cx + fighter.facing * 18, y: cy,
+        vx: Math.cos(angle) * 590, vy: Math.sin(angle) * 590, gravity: 0, dir: fighter.facing, radius: 15, knockVx: 390,
+        chillDuration: 0, life: 0.65, maxLife: 0.65, age: 0, color: "#8bd3ff" });
+    }
+    spawnParticles(cx, cy, 14, "#8bd3ff");
+  } else if (type === "teddy_guard") {
+    fighter.specialCooldown = fighter.def.specialCooldown;
+    fighter.teddyGuardTimer = fighter.def.teddyGuardDuration || 1.8;
+    spawnPopup(cx, cy - 30, "🧸 BODYGUARDS!", "#c58a55");
+    spawnParticles(cx - 28, cy, 16, "#c58a55"); spawnParticles(cx + 28, cy, 16, "#c58a55");
+  } else if (type === "cry_field") {
+    fighter.specialCooldown = fighter.def.specialCooldown;
+    const fx = cx + fighter.facing * (fighter.def.cryFieldWidth / 2 + 20);
+    hazardZones.push({ ownerId: fighter.id, type: "cry_field", x: fx, y: cy + 15, radius: fighter.def.cryFieldWidth / 2,
+      width: fighter.def.cryFieldWidth, height: fighter.def.cryFieldHeight, facing: fighter.facing,
+      life: fighter.def.cryFieldDuration, maxLife: fighter.def.cryFieldDuration, color: "#79caff" });
+    spawnPopup(cx, cy - 30, "😭 PLEASE DON'T ATTACK!", "#79caff"); spawnParticles(fx, cy, 30, "#79caff");
   } else if (type === "deduction_pulse") {
     fighter.specialCooldown = fighter.def.specialCooldown;
     fighter.squashX = 1.22;
