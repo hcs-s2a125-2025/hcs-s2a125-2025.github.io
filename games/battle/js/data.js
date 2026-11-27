@@ -38,7 +38,8 @@ const CHARACTER_DEFS = {
     projectileStyle: "star_shuriken",
     invincibleDuration: 1.05,
     knockbackScale: 1.0,
-    shockwaveRadius: 0
+    shockwaveRadius: 0,
+    ricochetCount: 1,
   },
   "🤪": {
     emoji: "🤪",
@@ -82,7 +83,9 @@ const CHARACTER_DEFS = {
     projectileStyle: "dizzy_bubble",
     invincibleDuration: 1.55,
     knockbackScale: 0.65,
-    shockwaveRadius: 0
+    shockwaveRadius: 0,
+    waveAmplitude: 16,
+    waveFrequency: 8,
   },
   "😎": {
     emoji: "😎",
@@ -126,7 +129,8 @@ const CHARACTER_DEFS = {
     projectileStyle: "quake_ring",
     invincibleDuration: 1.05,
     knockbackScale: 0.9,
-    shockwaveRadius: 50
+    shockwaveRadius: 50,
+    groundWave: true,
   },
   "🤯": {
     emoji: "🤯",
@@ -150,7 +154,8 @@ const CHARACTER_DEFS = {
     projectileColorOverride: "#ff9f1c",
     invincibleDuration: 1.05,
     knockbackScale: 0.95,
-    shockwaveRadius: 0
+    shockwaveRadius: 0,
+    impactBurstRadius: 62,
   },
   "🤠": {
     emoji: "🤠",
@@ -216,7 +221,8 @@ const CHARACTER_DEFS = {
     projectileColorOverride: "#ffd166",
     invincibleDuration: 1.05,
     knockbackScale: 1.0,
-    shockwaveRadius: 0
+    shockwaveRadius: 0,
+    ricochetCount: 1,
   },
   "🗺️": {
     emoji: "🗺️",
@@ -238,7 +244,8 @@ const CHARACTER_DEFS = {
     projectileColorOverride: "#ffd166",
     invincibleDuration: 1.05,
     knockbackScale: 0.96,
-    shockwaveRadius: 0
+    shockwaveRadius: 0,
+    homingStrength: 0.72,
   },
   "💩": {
     emoji: "💩",
@@ -282,7 +289,8 @@ const CHARACTER_DEFS = {
     projectileStyle: "scythe_spin",
     invincibleDuration: 1.1,
     knockbackScale: 0.85,
-    shockwaveRadius: 0
+    shockwaveRadius: 0,
+    returningProjectile: true,
   },
   "🫠": {
     emoji: "🫠",
@@ -303,7 +311,8 @@ const CHARACTER_DEFS = {
     projectileStyle: "slime_drop",
     invincibleDuration: 1.25,
     knockbackScale: 0.72,
-    shockwaveRadius: 0
+    shockwaveRadius: 0,
+    slimePoolDuration: 1.45,
   },
   "🫥": {
     emoji: "🫥",
@@ -325,7 +334,8 @@ const CHARACTER_DEFS = {
     projectileStyle: "ghost_wisp",
     invincibleDuration: 1.0,
     knockbackScale: 1.08,
-    shockwaveRadius: 0
+    shockwaveRadius: 0,
+    phaseWalls: true,
   },
   "🥶": {
     emoji: "🥶",
@@ -371,7 +381,8 @@ const CHARACTER_DEFS = {
     projectileColorOverride: "#4cc9f0",
     invincibleDuration: 1.05,
     knockbackScale: 0.95,
-    shockwaveRadius: 0
+    shockwaveRadius: 0,
+    impactBurstRadius: 35,
   },
   "🪬": {
     emoji: "🪬",
@@ -418,7 +429,8 @@ const CHARACTER_DEFS = {
     projectileColorOverride: "#72efdd",
     invincibleDuration: 1.15,
     knockbackScale: 0.76,
-    shockwaveRadius: 0
+    shockwaveRadius: 0,
+    impactBurstRadius: 38,
   },
   "🥳": {
     emoji: "🥳",
@@ -462,7 +474,8 @@ const CHARACTER_DEFS = {
     projectileColorOverride: "#b5179e",
     invincibleDuration: 1.05,
     knockbackScale: 1.0,
-    shockwaveRadius: 0
+    shockwaveRadius: 0,
+    phaseWalls: true,
   },
   "😇": {
     emoji: "😇",
@@ -489,7 +502,8 @@ const CHARACTER_DEFS = {
     projectileColorOverride: "#ffd166",
     invincibleDuration: 1.25,
     knockbackScale: 0.78,
-    shockwaveRadius: 0
+    shockwaveRadius: 0,
+    returningProjectile: true,
   },
   "😈": {
     emoji: "😈",
