@@ -1366,6 +1366,7 @@ function triggerPulse(fighter, chargeRatio = 0) {
   const isPoopBomb = style === "poop_bomb";
   const isSlimeDrop = style === "slime_drop";
   const isTeddyFriend = style === "teddy_friend";
+  const isTeddyRoll = style === "teddy_roll";
   const isTearDrop = style === "tear_drop";
   const baseKnock = fighter.def.baseKnockVx || 380;
 
@@ -1374,7 +1375,9 @@ function triggerPulse(fighter, chargeRatio = 0) {
   const projColor =
     fighter.def.projectileColorOverride ||
     (isBullet ? "#ffd166" : isBounceBall ? randomClownColor : fighter.accentColor);
-  const projectileLife = style === "teddy_friend"
+  const projectileLife = style === "teddy_roll"
+    ? 5.8
+    : style === "teddy_friend"
     ? 1.25 + clampedRatio * 0.55
     : fighter.def.returningProjectile
       ? rangeLife * 1.75
@@ -1390,10 +1393,15 @@ function triggerPulse(fighter, chargeRatio = 0) {
     y: fighter.def.groundWave ? GROUND_Y - 10 : cy,
     baseY: fighter.def.groundWave ? GROUND_Y - 10 : cy,
     vx: fighter.facing * fighter.def.pulseSpeed * (fighter.gear.pulseSpeedMultiplier || 1),
-    vy: isTeddyFriend ? -390 - clampedRatio * 110 : isTearDrop ? -290 - clampedRatio * 90 : isBounceBall ? -320 - clampedRatio * 120 : isPoopBomb ? -210 - clampedRatio * 95 : isSlimeDrop ? -195 - clampedRatio * 75 : 0,
-    gravity: isTeddyFriend ? 1250 : isTearDrop ? 980 : isBounceBall ? 1350 : isPoopBomb ? 980 : isSlimeDrop ? 1050 : 0,
+    vy: isTeddyFriend ? -390 - clampedRatio * 110 : isTeddyRoll ? 0 : isTearDrop ? -290 - clampedRatio * 90 : isBounceBall ? -320 - clampedRatio * 120 : isPoopBomb ? -210 - clampedRatio * 95 : isSlimeDrop ? -195 - clampedRatio * 75 : 0,
+    gravity: isTeddyFriend ? 1250 : isTeddyRoll ? 0 : isTearDrop ? 980 : isBounceBall ? 1350 : isPoopBomb ? 980 : isSlimeDrop ? 1050 : 0,
     teddyBounces: isTeddyFriend ? 1 + Math.floor(clampedRatio * 2) : 0,
     teddyLanded: 0,
+    teddyRoll: isTeddyRoll,
+    rollDir: isTeddyRoll ? (Math.random() < 0.5 ? -1 : 1) : 0,
+    rollDistance: 0,
+    rollPhase: isTeddyRoll ? "roll" : "",
+    rollSpeed: isTeddyRoll ? 260 : 0,
     dir: fighter.facing,
     radius: fighter.def.pulseRadius * (fighter.gear.pulseRadiusMultiplier || 1),
     knockVx: (baseKnock + clampedRatio * 65) * (fighter.gear.knockbackMultiplier || 1),
@@ -2862,7 +2870,18 @@ function update(dt) {
         pl.vx += pl.accelX * dt;
         pl.dir = Math.sign(pl.vx) || pl.dir;
       }
-      if (pl.gravity) {
+      if (pl.teddyRoll) {
+        if (pl.rollPhase === "roll") {
+          pl.vx = pl.rollDir * pl.rollSpeed;
+          pl.rollDistance += Math.abs(pl.vx * dt);
+          if (pl.rollDistance >= 210) { pl.rollPhase = "walk"; pl.rollSpeed = 145; }
+        } else {
+          pl.vx = pl.rollDir * pl.rollSpeed;
+          pl.rollSpeed = Math.min(175, pl.rollSpeed + 24 * dt);
+        }
+        pl.vy = 0;
+        pl.y = GROUND_Y - pl.radius * 0.82;
+      } else if (pl.gravity) {
         pl.vy = (pl.vy || 0) + pl.gravity * dt;
       }
       pl.x += pl.vx * dt;
@@ -2873,6 +2892,8 @@ function update(dt) {
         pl.y = pl.baseY + Math.sin(pl.age * (pl.waveFrequency || 7)) * pl.waveAmplitude;
       } else if (pl.groundWave) {
         pl.y = GROUND_Y - 10;
+      } else if (pl.teddyRoll) {
+        pl.y = GROUND_Y - pl.radius * 0.82;
       } else {
         pl.y += (pl.vy || 0) * dt;
       }
