@@ -359,7 +359,7 @@ function clearInputs() {
   p2Input.specialPressed = false;
 }
 
-function openStageScreen() {
+function animatePanelIn(panel) {\n  if (!window.gsap || !panel) return;\n  const title = panel.querySelector(".screen-title");\n  const cards = panel.querySelectorAll(".stage-card, .player-panel, .action-row > button");\n  gsap.fromTo(panel, { opacity: 0 }, { opacity: 1, duration: 0.22, overwrite: true });\n  if (title) gsap.fromTo(title, { y: -14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.38, ease: "back.out(1.5)", overwrite: true });\n  if (cards.length) gsap.fromTo(cards, { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.32, stagger: 0.035, ease: "power2.out", overwrite: true, delay: 0.05 });\n}\n\nfunction openStageScreen() {
   clearInputs();
   setPaused(false);
   Sound.setBgm("menu");
