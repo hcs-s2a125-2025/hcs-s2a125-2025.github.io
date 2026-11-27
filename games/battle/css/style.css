@@ -938,3 +938,51 @@ button.sub-btn:hover {
   pointer-events: none !important;
   cursor: default;
 }
+
+
+/* Eight-stage selection layout */
+.stage-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+  max-width: 920px;
+}
+
+.stage-card {
+  min-width: 0;
+  padding: 8px;
+  gap: 5px;
+}
+
+.stage-mini-canvas {
+  width: 100%;
+  max-width: none;
+  aspect-ratio: 16 / 9;
+}
+
+.stage-card-name {
+  font-size: 0.88rem;
+  line-height: 1.2;
+}
+
+.stage-card-desc {
+  min-height: 2.45em;
+  font-size: 0.68rem;
+}
+
+@media (max-width: 780px) {
+  .stage-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 430px) {
+  .stage-grid {
+    gap: 7px;
+  }
+  .stage-card {
+    padding: 6px;
+  }
+  .stage-card-desc {
+    font-size: 0.64rem;
+  }
+}
