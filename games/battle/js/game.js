@@ -1365,6 +1365,8 @@ function triggerPulse(fighter, chargeRatio = 0) {
   const isBounceBall = style === "bounce_ball";
   const isPoopBomb = style === "poop_bomb";
   const isSlimeDrop = style === "slime_drop";
+  const isTeddyFriend = style === "teddy_friend";
+  const isTearDrop = style === "tear_drop";
   const baseKnock = fighter.def.baseKnockVx || 380;
 
   const clownColors = ["#ff5c8a", "#ffd166", "#72efdd", "#c77dff"];
@@ -1386,8 +1388,10 @@ function triggerPulse(fighter, chargeRatio = 0) {
     y: fighter.def.groundWave ? GROUND_Y - 10 : cy,
     baseY: fighter.def.groundWave ? GROUND_Y - 10 : cy,
     vx: fighter.facing * fighter.def.pulseSpeed * (fighter.gear.pulseSpeedMultiplier || 1),
-    vy: isBounceBall ? -320 - clampedRatio * 120 : isPoopBomb ? -210 - clampedRatio * 95 : isSlimeDrop ? -195 - clampedRatio * 75 : 0,
-    gravity: isBounceBall ? 1350 : isPoopBomb ? 980 : isSlimeDrop ? 1050 : 0,
+    vy: isTeddyFriend ? -390 - clampedRatio * 110 : isTearDrop ? -290 - clampedRatio * 90 : isBounceBall ? -320 - clampedRatio * 120 : isPoopBomb ? -210 - clampedRatio * 95 : isSlimeDrop ? -195 - clampedRatio * 75 : 0,
+    gravity: isTeddyFriend ? 1250 : isTearDrop ? 980 : isBounceBall ? 1350 : isPoopBomb ? 980 : isSlimeDrop ? 1050 : 0,
+    teddyBounces: isTeddyFriend ? 1 + Math.floor(clampedRatio * 2) : 0,
+    teddyLanded: 0,
     dir: fighter.facing,
     radius: fighter.def.pulseRadius * (fighter.gear.pulseRadiusMultiplier || 1),
     knockVx: (baseKnock + clampedRatio * 65) * (fighter.gear.knockbackMultiplier || 1),
@@ -1409,6 +1413,15 @@ function triggerPulse(fighter, chargeRatio = 0) {
     age: 0,
     color: projColor
   });
+
+  if (style === "teddy_friend") {
+    const count = 1 + Math.floor(clampedRatio * 3);
+    const first = pulses[pulses.length - 1];
+    for (let n = 1; n < count; n++) pulses.push({ ...first,
+      x: cx + fighter.facing * (22 + n * 9), y: cy - n * 7,
+      vx: fighter.facing * (fighter.def.pulseSpeed - n * 36), vy: -340 - clampedRatio * 115 - n * 30,
+      life: first.life + 0.12, maxLife: first.maxLife + 0.12, radius: Math.max(15, first.radius - n * 2) });
+  }
 
   if (fighter.def.shockwaveRadius > 0) {
     shockwaves.push({
