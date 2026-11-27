@@ -1374,11 +1374,13 @@ function triggerPulse(fighter, chargeRatio = 0) {
   const projColor =
     fighter.def.projectileColorOverride ||
     (isBullet ? "#ffd166" : isBounceBall ? randomClownColor : fighter.accentColor);
-  const projectileLife = fighter.def.returningProjectile
-    ? rangeLife * 1.75
-    : isSlimeDrop
-      ? Math.max(rangeLife, 0.48)
-      : rangeLife;
+  const projectileLife = style === "teddy_friend"
+    ? 1.25 + clampedRatio * 0.55
+    : fighter.def.returningProjectile
+      ? rangeLife * 1.75
+      : isSlimeDrop
+        ? Math.max(rangeLife, 0.48)
+        : rangeLife;
 
   pulses.push({
     ownerId: fighter.id,
