@@ -164,32 +164,307 @@ function triggerScreenShake(duration, magnitude) {
   screenShakeMagnitude = Math.max(screenShakeMagnitude, magnitude);
 }
 
-function drawStagePreview(miniCanvas, stage) {
-  const mctx = miniCanvas.getContext("2d");
-  const mw = miniCanvas.width;
-  const mh = miniCanvas.height;
-  const sx = mw / VIEW_WIDTH;
-  const sy = mh / VIEW_HEIGHT;
-
-  const grad = mctx.createLinearGradient(0, 0, 0, mh);
-  grad.addColorStop(0, stage.bgTop);
-  grad.addColorStop(1, stage.bgBottom);
-  mctx.fillStyle = grad;
-  mctx.fillRect(0, 0, mw, mh);
-
-  for (const p of stage.platforms) {
-    if (p.type === "floor") {
-      mctx.fillStyle = stage.floorAccent;
-      mctx.fillRect(p.x * sx, p.y * sy, p.w * sx, Math.max(3, p.h * sy));
-    } else if (p.type === "wall") {
-      mctx.fillStyle = stage.wallAccent || "#ffd166";
-      mctx.fillRect(p.x * sx, p.y * sy, Math.max(3, p.w * sx), p.h * sy);
-    } else {
-      mctx.fillStyle = stage.shelfAccent;
-      mctx.fillRect(p.x * sx, p.y * sy, p.w * sx, Math.max(4, p.h * sy));
-    }
+function drawBackdropPolygon(targetCtx, points, fill, stroke = null, lineWidth = 1) {
+  targetCtx.beginPath();
+  targetCtx.moveTo(points[0][0], points[0][1]);
+  for (let i = 1; i < points.length; i++) targetCtx.lineTo(points[i][0], points[i][1]);
+  targetCtx.closePath();
+  targetCtx.fillStyle = fill;
+  targetCtx.fill();
+  if (stroke) {
+    targetCtx.strokeStyle = stroke;
+    targetCtx.lineWidth = lineWidth;
+    targetCtx.stroke();
   }
 }
+
+function drawBackdropCloud(targetCtx, x, y, scale, color) {
+  targetCtx.save();
+  targetCtx.fillStyle = color;
+  targetCtx.beginPath();
+  targetCtx.arc(x, y, 17 * scale, Math.PI, 0);
+  targetCtx.arc(x + 20 * scale, y - 8 * scale, 22 * scale, Math.PI, 0);
+  targetCtx.arc(x + 43 * scale, y, 15 * scale, Math.PI, 0);
+  targetCtx.lineTo(x + 43 * scale, y + 8 * scale);
+  targetCtx.lineTo(x, y + 8 * scale);
+  targetCtx.closePath();
+  targetCtx.fill();
+  targetCtx.restore();
+}
+
+function drawBackdropStars(targetCtx, color = "rgba(255,255,255,0.72)") {
+  const stars = [
+    [54, 62, 1.8], [132, 112, 1.3], [208, 48, 1.5], [304, 94, 1.2],
+    [390, 52, 1.6], [506, 92, 1.2], [606, 48, 1.7], [705, 104, 1.3],
+    [812, 56, 1.8], [900, 128, 1.2], [748, 180, 1.0], [250, 170, 1.0]
+  ];
+  targetCtx.fillStyle = color;
+  for (const [x, y, r] of stars) {
+    targetCtx.beginPath();
+    targetCtx.arc(x, y, r, 0, Math.PI * 2);
+    targetCtx.fill();
+  }
+}
+
+function drawThemedBackdrop(targetCtx, stage, elapsed = 0) {
+  const theme = stage.theme || "city_night";
+  const sky = targetCtx.createLinearGradient(0, 0, 0, GROUND_Y);
+  sky.addColorStop(0, stage.bgTop);
+  sky.addColorStop(1, stage.bgBottom);
+  targetCtx.fillStyle = sky;
+  targetCtx.fillRect(0, 0, VIEW_WIDTH, GROUND_Y);
+
+  if (theme.startsWith("city_")) {
+    const night = theme === "city_night";
+    const warm = theme === "city_evening" || theme === "city_sunset";
+    if (theme === "city_day") {
+      targetCtx.fillStyle = "rgba(255,241,190,0.88)";
+      targetCtx.beginPath();
+      targetCtx.arc(770, 112, 42, 0, Math.PI * 2);
+      targetCtx.fill();
+      drawBackdropCloud(targetCtx, 120, 125, 0.8, "rgba(255,255,255,0.42)");
+      drawBackdropCloud(targetCtx, 540, 88, 0.65, "rgba(255,255,255,0.34)");
+    } else if (theme === "city_evening") {
+      targetCtx.fillStyle = "rgba(255,197,145,0.86)";
+      targetCtx.beginPath();
+      targetCtx.arc(690, 265, 62, 0, Math.PI * 2);
+      targetCtx.fill();
+      drawBackdropCloud(targetCtx, 170, 142, 0.7, "rgba(255,205,178,0.20)");
+      drawBackdropCloud(targetCtx, 565, 170, 0.55, "rgba(255,217,187,0.18)");
+    } else if (theme === "city_sunset") {
+      targetCtx.fillStyle = "rgba(255,190,115,0.9)";
+      targetCtx.beginPath();
+      targetCtx.arc(480, 260, 82, 0, Math.PI * 2);
+      targetCtx.fill();
+      for (let i = 0; i < 4; i++) {
+        targetCtx.fillStyle = "rgba(111,60,89,0.12)";
+        targetCtx.fillRect(0, 300 + i * 27, VIEW_WIDTH, 5);
+      }
+    } else {
+      drawBackdropStars(targetCtx, "rgba(196,219,255,0.72)");
+      targetCtx.fillStyle = "rgba(222,235,255,0.88)";
+      targetCtx.beginPath();
+      targetCtx.arc(760, 92, 29, 0, Math.PI * 2);
+      targetCtx.fill();
+      targetCtx.fillStyle = stage.bgTop;
+      targetCtx.beginPath();
+      targetCtx.arc(773, 82, 27, 0, Math.PI * 2);
+      targetCtx.fill();
+    }
+
+    const skyline = [
+      [-22, 92, 132], [62, 72, 208], [126, 86, 158], [204, 68, 246],
+      [267, 94, 174], [354, 78, 216], [430, 106, 148], [528, 74, 225],
+      [596, 90, 184], [680, 70, 252], [744, 102, 160], [840, 80, 214],
+      [914, 74, 140]
+    ];
+    for (let layer = 0; layer < 2; layer++) {
+      const offset = layer === 0 ? 0 : 34;
+      const baseline = layer === 0 ? 392 : 435;
+      for (let i = 0; i < skyline.length; i++) {
+        const [x, w, rawH] = skyline[i];
+        const h = Math.max(54, rawH * (layer === 0 ? 0.78 : 0.48));
+        const bx = x + offset;
+        const by = baseline - h;
+        targetCtx.fillStyle = layer === 0
+          ? (night ? "rgba(7,13,35,0.88)" : warm ? "rgba(43,35,59,0.78)" : "rgba(42,68,84,0.54)")
+          : (night ? "rgba(16,24,52,0.92)" : warm ? "rgba(58,43,62,0.68)" : "rgba(69,100,114,0.42)");
+        targetCtx.fillRect(bx, by, w, h);
+        if (i % 3 === 1) {
+          targetCtx.fillRect(bx + w * 0.42, by - 12, 5, 12);
+          targetCtx.fillRect(bx + w * 0.42 - 4, by - 13, 13, 3);
+        }
+        const windowColor = night
+          ? "rgba(136,205,255,0.62)"
+          : warm ? "rgba(255,197,125,0.62)" : "rgba(255,246,202,0.52)";
+        targetCtx.fillStyle = windowColor;
+        for (let wy = by + 18; wy < baseline - 10; wy += 23) {
+          for (let wx = bx + 10; wx < bx + w - 8; wx += 18) {
+            if (((Math.floor(wx * 7 + wy * 3 + i * 11) % 5) + 5) % 5 < (night ? 3 : 2)) {
+              targetCtx.fillRect(wx, wy, 5, 8);
+            }
+          }
+        }
+      }
+    }
+    if (night) {
+      targetCtx.strokeStyle = "rgba(111,169,255,0.17)";
+      targetCtx.lineWidth = 1;
+      for (let x = 0; x < VIEW_WIDTH; x += 80) {
+        targetCtx.beginPath(); targetCtx.moveTo(x, 210); targetCtx.lineTo(x, GROUND_Y); targetCtx.stroke();
+      }
+    }
+    return;
+  }
+
+  if (theme === "factory") {
+    // Industrial skyline: layered warehouses, stacks, ducts and drifting steam.
+    drawBackdropPolygon(targetCtx, [[0,330],[85,285],[180,316],[270,274],[380,316],[480,280],[610,318],[730,275],[860,312],[960,278],[960,468],[0,468]], "rgba(28,39,42,0.68)");
+    const factories = [[28,190,112],[260,210,145],[575,175,118],[790,185,138]];
+    for (const [x,w,h] of factories) {
+      const y = 438 - h;
+      targetCtx.fillStyle = "rgba(26,35,38,0.92)";
+      targetCtx.fillRect(x,y,w,h);
+      drawBackdropPolygon(targetCtx, [[x,y+16],[x+28,y-4],[x+62,y+16],[x+92,y-5],[x+126,y+16],[x+w,y+16],[x+w,y+31],[x,y+31]], "rgba(47,59,60,0.98)");
+      targetCtx.fillStyle = "rgba(255,183,91,0.62)";
+      for (let wx=x+16; wx<x+w-12; wx+=30) {
+        for (let wy=y+48; wy<430; wy+=34) targetCtx.fillRect(wx,wy,10,13);
+      }
+      targetCtx.fillStyle = "rgba(99,113,110,0.95)";
+      targetCtx.fillRect(x+w*0.68,y-72,25,76);
+      targetCtx.fillStyle = "rgba(37,48,51,1)";
+      targetCtx.fillRect(x+w*0.68-4,y-76,33,8);
+    }
+    for (const [sx, sy, phase] of [[158,276,0],[622,246,1.8],[845,255,3.1]]) {
+      const drift = Math.sin(elapsed * 0.55 + phase) * 12;
+      targetCtx.fillStyle = "rgba(211,220,211,0.12)";
+      for (let k=0;k<4;k++) {
+        targetCtx.beginPath();
+        targetCtx.arc(sx + drift + k*10, sy-k*18, 11+k*2, 0, Math.PI*2);
+        targetCtx.fill();
+      }
+    }
+    targetCtx.strokeStyle = "rgba(255,179,88,0.28)";
+    targetCtx.lineWidth = 7;
+    targetCtx.beginPath();
+    targetCtx.moveTo(0,390); targetCtx.lineTo(VIEW_WIDTH,390);
+    targetCtx.stroke();
+    targetCtx.strokeStyle = "rgba(30,42,44,0.9)";
+    targetCtx.lineWidth = 3;
+    for (let x=25;x<VIEW_WIDTH;x+=95) {
+      targetCtx.beginPath(); targetCtx.moveTo(x,390); targetCtx.lineTo(x+32,410); targetCtx.stroke();
+    }
+    return;
+  }
+
+  if (theme === "castle") {
+    drawBackdropStars(targetCtx, "rgba(221,226,255,0.52)");
+    targetCtx.fillStyle = "rgba(224,231,244,0.78)";
+    targetCtx.beginPath(); targetCtx.arc(790,96,35,0,Math.PI*2); targetCtx.fill();
+    drawBackdropPolygon(targetCtx, [[0,355],[110,240],[220,345],[340,220],[480,350],[620,235],[760,342],[880,230],[960,330],[960,468],[0,468]], "rgba(30,43,65,0.68)");
+    targetCtx.fillStyle = "rgba(31,38,58,0.97)";
+    targetCtx.fillRect(330,310,300,145);
+    targetCtx.fillRect(385,250,190,205);
+    targetCtx.fillRect(445,202,78,253);
+    // Japanese castle roofs.
+    for (const [x,y,w] of [[300,300,170],[490,300,170],[370,238,220],[426,192,116]]) {
+      drawBackdropPolygon(targetCtx, [[x,y+18],[x+w*0.18,y],[x+w*0.82,y],[x+w,y+18],[x+w*0.74,y+13],[x+w*0.5,y+23],[x+w*0.26,y+13]], "#6d7182", "#b7b6b4", 2);
+    }
+    targetCtx.fillStyle = "rgba(202,213,231,0.8)";
+    for (const x of [350,385,565,600]) {
+      targetCtx.fillRect(x,335,10,24);
+      targetCtx.fillRect(x,383,10,24);
+    }
+    targetCtx.fillStyle = "#c1d4e5";
+    targetCtx.fillRect(470,355,20,100);
+    targetCtx.fillStyle = "rgba(255,183,106,0.65)";
+    targetCtx.fillRect(470,388,20,36);
+    targetCtx.strokeStyle = "rgba(226,198,151,0.75)";
+    targetCtx.lineWidth = 3;
+    targetCtx.beginPath(); targetCtx.moveTo(480,194); targetCtx.lineTo(480,145); targetCtx.stroke();
+    drawBackdropPolygon(targetCtx, [[480,148],[520,160],[480,172]], "#d76c64");
+    return;
+  }
+
+  if (theme === "construction") {
+    // Unfinished concrete frames and a tower crane.
+    targetCtx.fillStyle = "rgba(48,62,67,0.22)";
+    targetCtx.fillRect(70,275,210,190);
+    targetCtx.fillRect(710,310,170,155);
+    targetCtx.strokeStyle = "rgba(48,58,61,0.85)";
+    targetCtx.lineWidth = 8;
+    for (const baseX of [92,145,198,735,790,845]) {
+      targetCtx.beginPath(); targetCtx.moveTo(baseX,270); targetCtx.lineTo(baseX,468); targetCtx.stroke();
+    }
+    for (const y of [300,355,410]) {
+      targetCtx.beginPath(); targetCtx.moveTo(80,y); targetCtx.lineTo(280,y); targetCtx.stroke();
+      targetCtx.beginPath(); targetCtx.moveTo(725,y+10); targetCtx.lineTo(875,y+10); targetCtx.stroke();
+    }
+    targetCtx.strokeStyle = "#e6b34e";
+    targetCtx.lineWidth = 7;
+    targetCtx.beginPath(); targetCtx.moveTo(585,145); targetCtx.lineTo(915,145); targetCtx.stroke();
+    targetCtx.lineWidth = 9;
+    targetCtx.beginPath(); targetCtx.moveTo(720,145); targetCtx.lineTo(720,430); targetCtx.stroke();
+    targetCtx.lineWidth = 4;
+    targetCtx.beginPath();
+    targetCtx.moveTo(720,145); targetCtx.lineTo(650,205);
+    targetCtx.moveTo(720,145); targetCtx.lineTo(790,205);
+    targetCtx.moveTo(650,205); targetCtx.lineTo(790,205);
+    targetCtx.stroke();
+    targetCtx.strokeStyle = "rgba(48,58,61,0.8)";
+    targetCtx.lineWidth = 3;
+    for (let x=590;x<910;x+=32) {
+      targetCtx.beginPath(); targetCtx.moveTo(x,145); targetCtx.lineTo(x+25,205); targetCtx.stroke();
+    }
+    targetCtx.strokeStyle = "#343c3d";
+    targetCtx.lineWidth = 3;
+    targetCtx.beginPath(); targetCtx.moveTo(790,145); targetCtx.lineTo(790,265); targetCtx.stroke();
+    targetCtx.fillStyle = "#f3c653";
+    targetCtx.fillRect(780,258,20,8);
+    targetCtx.fillStyle = "#394345";
+    targetCtx.fillRect(40,435,880,13);
+    for (let x=45;x<920;x+=34) {
+      targetCtx.fillStyle = "#e7b64e";
+      targetCtx.fillRect(x,435,17,5);
+    }
+    return;
+  }
+
+  if (theme === "campsite") {
+    drawBackdropStars(targetCtx, "rgba(224,245,220,0.82)");
+    targetCtx.fillStyle = "rgba(236,241,204,0.88)";
+    targetCtx.beginPath(); targetCtx.arc(790,85,24,0,Math.PI*2); targetCtx.fill();
+    drawBackdropPolygon(targetCtx, [[0,360],[115,215],[230,355],[360,185],[515,360],[675,220],[820,350],[930,205],[960,250],[960,468],[0,468]], "rgba(34,64,64,0.8)");
+    drawBackdropPolygon(targetCtx, [[0,405],[140,300],[270,410],[420,280],[560,408],[725,302],[870,410],[960,340],[960,468],[0,468]], "rgba(22,51,48,0.9)");
+    // Pine tree silhouettes.
+    for (const [x,y,size] of [[65,350,1.0],[145,365,0.72],[255,365,0.82],[700,362,0.9],[855,360,1.0],[925,372,0.68]]) {
+      targetCtx.fillStyle = "#142f2d";
+      targetCtx.fillRect(x-4,y,8,65);
+      for(let k=0;k<3;k++) {
+        const yy=y-k*24;
+        drawBackdropPolygon(targetCtx, [[x,yy-size*42],[x-size*23*(1-k*0.16),yy+5],[x+size*23*(1-k*0.16),yy+5]], k===1 ? "#1b4238" : "#17382f");
+      }
+    }
+    // Tent and campfire.
+    drawBackdropPolygon(targetCtx, [[275,420],[330,334],[390,420]], "#bd7456", "#edc18d", 3);
+    drawBackdropPolygon(targetCtx, [[330,420],[330,360],[390,420]], "#714c46");
+    targetCtx.fillStyle = "#f7b85e";
+    targetCtx.beginPath(); targetCtx.arc(690,418,9+Math.sin(elapsed*8)*2,0,Math.PI*2); targetCtx.fill();
+    drawBackdropPolygon(targetCtx, [[680,430],[690,398],[700,430]], "#ffcf71");
+    targetCtx.strokeStyle = "rgba(255,190,108,0.55)";
+    targetCtx.lineWidth = 2;
+    targetCtx.beginPath(); targetCtx.moveTo(674,430); targetCtx.lineTo(705,430); targetCtx.stroke();
+  }
+}
+
+function drawStagePreview(miniCanvas, stage) {
+  const mctx = miniCanvas.getContext("2d");
+  const sx = miniCanvas.width / VIEW_WIDTH;
+  const sy = miniCanvas.height / VIEW_HEIGHT;
+  mctx.save();
+  mctx.scale(sx, sy);
+  drawThemedBackdrop(mctx, stage, 0);
+  for (const p of stage.platforms) {
+    if (p.type === "floor") {
+      mctx.fillStyle = stage.floorFill || "#202532";
+      mctx.fillRect(p.x, p.y, p.w, p.h);
+      mctx.fillStyle = stage.floorAccent;
+      mctx.fillRect(p.x, p.y, p.w, 5);
+    } else if (p.type === "wall") {
+      mctx.fillStyle = stage.wallFill || "#263044";
+      mctx.fillRect(p.x, p.y, p.w, p.h);
+      mctx.fillStyle = stage.wallAccent || stage.floorAccent;
+      mctx.fillRect(p.x, p.y, p.w, 3);
+    } else {
+      mctx.fillStyle = stage.shelfFill;
+      mctx.fillRect(p.x, p.y, p.w, p.h);
+      mctx.fillStyle = stage.shelfAccent;
+      mctx.fillRect(p.x + 3, p.y + 2, Math.max(0,p.w - 6), 3);
+    }
+  }
+  mctx.restore();
+}
+
 
 function buildStageSelectUI() {
   stageGrid.innerHTML = "";
@@ -2660,116 +2935,101 @@ function getDecor(idx) {
 
 function drawArena() {
   const stage = getCurrentStage();
-  const decor = getDecor(selectedStageIndex);
-  const grad = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
-  grad.addColorStop(0, stage.bgTop);
-  grad.addColorStop(1, stage.bgBottom);
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, VIEW_WIDTH, GROUND_Y);
-
-  const mp = 1 + Math.sin(timeElapsed * 0.8) * 0.03;
-  const moonGrad = ctx.createRadialGradient(decor.moon.x, decor.moon.y, 4, decor.moon.x, decor.moon.y, 110 * mp);
-  moonGrad.addColorStop(0, "rgba(255,255,255,0.28)");
-  moonGrad.addColorStop(0.25, "rgba(255,255,255,0.08)");
-  moonGrad.addColorStop(1, "rgba(255,255,255,0)");
-  ctx.fillStyle = moonGrad;
-  ctx.fillRect(0, 0, VIEW_WIDTH, GROUND_Y);
-  ctx.fillStyle = "rgba(255,255,255,0.22)";
-  ctx.beginPath();
-  ctx.arc(decor.moon.x, decor.moon.y, 28, 0, Math.PI * 2);
-  ctx.fill();
-
-  for (const b of decor.buildings) {
-    ctx.fillStyle = "rgba(0,0,0,0.30)";
-    ctx.fillRect(b.x, GROUND_Y - b.h, b.w, b.h);
-    for (const w of b.wins) {
-      ctx.globalAlpha = 0.2 + 0.2 * (0.5 + 0.5 * Math.sin(timeElapsed * 1.4 + w[2]));
-      ctx.fillStyle = stage.floorAccent;
-      ctx.fillRect(w[0], w[1], 6, 8);
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  ctx.strokeStyle = stage.gridColor;
-  ctx.lineWidth = 1.5;
-  for (let x = 0; x <= VIEW_WIDTH; x += 64) {
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, GROUND_Y);
-    ctx.stroke();
-  }
-  for (let y = 64; y < GROUND_Y; y += 64) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(VIEW_WIDTH, y);
-    ctx.stroke();
-  }
-
-  // Low-cost animated light bands (solid translucent strips instead of gradients).
-  ctx.fillStyle = "rgba(114,239,221,0.022)";
-  const bandX1 = ((timeElapsed * 22) % (VIEW_WIDTH + 180)) - 90;
-  ctx.fillRect(bandX1, 0, 42, GROUND_Y);
-  ctx.fillStyle = "rgba(199,125,255,0.018)";
-  const bandX2 = ((timeElapsed * 15 + 410) % (VIEW_WIDTH + 180)) - 90;
-  ctx.fillRect(bandX2, 0, 30, GROUND_Y);
-
-  ctx.fillStyle = stage.floorAccent;
-  for (const o of decor.orbs) {
-    const oy = (((o.y - timeElapsed * o.sp) % GROUND_Y) + GROUND_Y) % GROUND_Y;
-    const ox = o.x + Math.sin(timeElapsed * 0.6 + o.ph) * o.amp;
-    ctx.globalAlpha = 0.14 + 0.14 * (0.5 + 0.5 * Math.sin(timeElapsed * 1.7 + o.ph));
-    ctx.beginPath();
-    ctx.arc(ox, oy, o.r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.globalAlpha = 1;
+  drawThemedBackdrop(ctx, stage, timeElapsed);
 
   for (const p of stage.platforms) {
     if (p.type === "floor") {
-      const fg = ctx.createLinearGradient(0, p.y, 0, p.y + p.h);
-      fg.addColorStop(0, "#241a4d");
-      fg.addColorStop(1, "#0f0a24");
-      ctx.fillStyle = fg;
+      const floorGrad = ctx.createLinearGradient(0, p.y, 0, p.y + p.h);
+      floorGrad.addColorStop(0, stage.floorTop || "#394454");
+      floorGrad.addColorStop(1, stage.floorBottom || stage.floorFill || "#17202c");
+      ctx.fillStyle = floorGrad;
       ctx.fillRect(p.x, p.y, p.w, p.h);
       ctx.fillStyle = stage.floorAccent;
       ctx.fillRect(p.x, p.y, p.w, 5);
-      ctx.globalAlpha = 0.28;
+      ctx.globalAlpha = 0.26;
       ctx.fillRect(p.x, p.y + 5, p.w, 2);
       ctx.globalAlpha = 1;
-      ctx.strokeStyle = "rgba(255,255,255,0.05)";
-      ctx.lineWidth = 1;
-      for (let x = 0; x < p.w; x += 48) {
+
+      if (stage.theme === "factory" || stage.theme === "construction") {
+        ctx.save();
         ctx.beginPath();
-        ctx.moveTo(x, p.y + 6);
-        ctx.lineTo(x - 24, p.y + p.h);
-        ctx.stroke();
+        ctx.rect(p.x, p.y + 8, p.w, Math.max(0, p.h - 8));
+        ctx.clip();
+        ctx.strokeStyle = "rgba(255,196,82,0.22)";
+        ctx.lineWidth = 8;
+        for (let x = p.x - 30; x < p.x + p.w + 40; x += 54) {
+          ctx.beginPath();
+          ctx.moveTo(x, p.y + 12);
+          ctx.lineTo(x + 30, p.y + 42);
+          ctx.stroke();
+        }
+        ctx.restore();
+      } else if (stage.theme === "castle") {
+        ctx.strokeStyle = "rgba(222,216,202,0.12)";
+        ctx.lineWidth = 1;
+        for (let x = 0; x < p.w; x += 78) {
+          ctx.beginPath(); ctx.moveTo(x, p.y + 9); ctx.lineTo(x + 24, p.y + p.h); ctx.stroke();
+        }
+      } else if (stage.theme === "campsite") {
+        ctx.strokeStyle = "rgba(181,214,149,0.16)";
+        ctx.lineWidth = 2;
+        for (let x = p.x + 18; x < p.x + p.w; x += 72) {
+          ctx.beginPath(); ctx.moveTo(x, p.y + 13); ctx.lineTo(x + 18, p.y + 22); ctx.stroke();
+        }
       }
     } else if (p.type === "wall") {
       ctx.fillStyle = stage.wallFill || "#1f1447";
       ctx.beginPath();
       ctx.roundRect(p.x, p.y, p.w, p.h, 5);
       ctx.fill();
-      ctx.strokeStyle = stage.wallAccent || "#72efdd";
+      ctx.strokeStyle = stage.wallAccent || stage.floorAccent;
       ctx.lineWidth = 2;
       ctx.stroke();
-      ctx.fillStyle = stage.wallAccent || "#72efdd";
-      ctx.globalAlpha = 0.55 + 0.25 * Math.sin(timeElapsed * 3 + p.x);
-      ctx.fillRect(p.x + p.w / 2 - 2, p.y + 8, 4, Math.max(8, p.h - 16));
+      ctx.fillStyle = stage.wallAccent || stage.floorAccent;
+      ctx.globalAlpha = 0.62;
+      if (stage.theme === "construction" || stage.theme === "factory") {
+        for (let y = p.y + 8; y < p.y + p.h - 4; y += 18) {
+          ctx.fillRect(p.x + 3, y, Math.max(2,p.w - 6), 3);
+        }
+      } else {
+        ctx.fillRect(p.x + p.w / 2 - 2, p.y + 8, 4, Math.max(8, p.h - 16));
+      }
       ctx.globalAlpha = 1;
     } else {
       ctx.fillStyle = stage.shelfFill;
       ctx.beginPath();
-      ctx.roundRect(p.x, p.y, p.w, p.h, 6);
+      ctx.roundRect(p.x, p.y, p.w, p.h, stage.theme === "campsite" ? 8 : 5);
       ctx.fill();
+      ctx.strokeStyle = stage.shelfAccent;
+      ctx.lineWidth = 1;
+      ctx.stroke();
       ctx.fillStyle = stage.shelfAccent;
-      ctx.fillRect(p.x + 4, p.y + 2, p.w - 8, 4);
+      ctx.fillRect(p.x + 4, p.y + 2, Math.max(0,p.w - 8), 4);
+
+      if (stage.theme === "factory" || stage.theme === "construction") {
+        ctx.fillStyle = "rgba(255,205,91,0.72)";
+        for (let x = p.x + 10; x < p.x + p.w - 12; x += 32) {
+          ctx.fillRect(x, p.y + p.h - 4, 14, 2);
+        }
+      } else if (stage.theme === "castle") {
+        ctx.fillStyle = "rgba(238,224,199,0.23)";
+        for (let x = p.x + 34; x < p.x + p.w - 10; x += 54) {
+          ctx.fillRect(x, p.y + 8, 1, Math.max(2,p.h - 9));
+        }
+      } else if (stage.theme === "campsite") {
+        ctx.fillStyle = "rgba(204,228,164,0.38)";
+        ctx.fillRect(p.x + 12, p.y + 7, Math.max(0,p.w - 24), 2);
+      }
     }
   }
 
-  const vg = ctx.createRadialGradient(VIEW_WIDTH / 2, VIEW_HEIGHT / 2, VIEW_HEIGHT * 0.45, VIEW_WIDTH / 2, VIEW_HEIGHT / 2, VIEW_WIDTH * 0.62);
-  vg.addColorStop(0, "rgba(0,0,0,0)");
-  vg.addColorStop(1, "rgba(0,0,0,0.38)");
-  ctx.fillStyle = vg;
+  const vignette = ctx.createRadialGradient(
+    VIEW_WIDTH / 2, VIEW_HEIGHT / 2, VIEW_HEIGHT * 0.45,
+    VIEW_WIDTH / 2, VIEW_HEIGHT / 2, VIEW_WIDTH * 0.62
+  );
+  vignette.addColorStop(0, "rgba(0,0,0,0)");
+  vignette.addColorStop(1, "rgba(0,0,0,0.26)");
+  ctx.fillStyle = vignette;
   ctx.fillRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
 }
 
