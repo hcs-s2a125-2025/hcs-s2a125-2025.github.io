@@ -3256,6 +3256,7 @@ function drawPulsesAndParticles() {
     ctx.restore();
   }
 
+  if (!window.BattleEffects?.isReady) {
   for (const fx of impactFlashes) {
     const progress = 1 - Math.max(0, fx.life / fx.maxLife);
     const eased = 1 - Math.pow(1 - progress, 3);
@@ -3274,9 +3275,10 @@ function drawPulsesAndParticles() {
     ctx.stroke();
     ctx.restore();
   }
+  }
 
   for (const pl of pulses) {
-    if (pl.trail && pl.trail.length > 1) {
+    if (!window.BattleEffects?.isReady && pl.trail && pl.trail.length > 1) {
       ctx.save();
       ctx.globalAlpha = 0.24;
       ctx.strokeStyle = pl.color || "#ffffff";
@@ -3772,6 +3774,7 @@ function drawPulsesAndParticles() {
     ctx.restore();
   }
 
+  if (!window.BattleEffects?.isReady) {
   ctx.lineCap = "round";
   for (const pt of particles) {
     const fade = Math.max(0, pt.life / pt.maxLife);
@@ -3802,16 +3805,19 @@ function drawPulsesAndParticles() {
     }
   }
   ctx.globalAlpha = 1;
+  }
 }
 
 function render() {
   ctx.setTransform(renderScale, 0, 0, renderScale, 0, 0);
   ctx.clearRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
   ctx.save();
+  let shakeX = 0;
+  let shakeY = 0;
   if (screenShakeTimer > 0 && screenShakeMagnitude > 0) {
-    const sx = (Math.random() - 0.5) * 2 * screenShakeMagnitude;
-    const sy = (Math.random() - 0.5) * 2 * screenShakeMagnitude;
-    ctx.translate(sx, sy);
+    shakeX = (Math.random() - 0.5) * 2 * screenShakeMagnitude;
+    shakeY = (Math.random() - 0.5) * 2 * screenShakeMagnitude;
+    ctx.translate(shakeX, shakeY);
   }
   drawArena();
   if (screenMode === "battle" || screenMode === "result") {
@@ -3821,6 +3827,9 @@ function render() {
     drawOverlayBanners();
   }
   ctx.restore();
+  if (window.BattleEffects?.isReady) {
+    window.BattleEffects.render(impactFlashes, pulses, particles, fighters, shakeX, shakeY);
+  }
 }
 
 let lastTime = performance.now();
