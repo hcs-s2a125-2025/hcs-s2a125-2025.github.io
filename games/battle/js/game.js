@@ -4125,10 +4125,11 @@ window.addEventListener("keydown", (e) => {
   }
 
   if (screenMode === "stage") {
+    const stageColumns = Math.max(1, getComputedStyle(stageGrid).gridTemplateColumns.split(" ").length);
     if (code === "ArrowLeft") selectStage(selectedStageIndex - 1);
     else if (code === "ArrowRight") selectStage(selectedStageIndex + 1);
-    else if (code === "ArrowUp") selectStage(selectedStageIndex - 2);
-    else if (code === "ArrowDown") selectStage(selectedStageIndex + 2);
+    else if (code === "ArrowUp") selectStage(selectedStageIndex - stageColumns);
+    else if (code === "ArrowDown") selectStage(selectedStageIndex + stageColumns);
     else if ((code === "Enter" || code === "NumpadEnter") && !e.repeat) {
       e.preventDefault();
       Sound.sfx("click");
