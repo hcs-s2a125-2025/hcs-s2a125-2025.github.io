@@ -35,6 +35,10 @@ const startBattleBtn = document.getElementById("startBattleBtn");
 
 const p1Grid = document.getElementById("p1Grid");
 const p2Grid = document.getElementById("p2Grid");
+const p1GearGrid = document.getElementById("p1GearGrid");
+const p2GearGrid = document.getElementById("p2GearGrid");
+const p1GearInfo = document.getElementById("p1GearInfo");
+const p2GearInfo = document.getElementById("p2GearInfo");
 const p1Preview = document.getElementById("p1Preview");
 const p2Preview = document.getElementById("p2Preview");
 const p1AbilityName = document.getElementById("p1AbilityName");
@@ -113,6 +117,8 @@ pauseP2FullAutoEl.addEventListener("change", (e) => { assistOptions.p2.fullAuto 
 let selectedStageIndex = 0;
 let selectedP1 = "🤯";
 let selectedP2 = "💩";
+let selectedGearP1 = null;
+let selectedGearP2 = null;
 let screenMode = "stage"; // "stage" | "char" | "battle" | "result"
 
 const p1Input = { left: false, right: false, jumpPressed: false, pulseHeld: false, pulseReleased: false, specialPressed: false };
@@ -240,6 +246,39 @@ function randomCharacter() {
   return SELECTABLE_CHARACTERS[Math.floor(Math.random() * SELECTABLE_CHARACTERS.length)];
 }
 
+function updateGearInfoUI() {
+  const update = (grid, info, selected) => {
+    Array.from(grid.children).forEach((btn) => btn.classList.toggle("active", btn.dataset.gear === (selected || "none")));
+    const gear = selected ? EQUIPMENT_DEFS[selected] : null;
+    info.textContent = gear ? `${gear.emoji} ${gear.name}：${gear.desc}` : "装備なし：キャラクター本来の性能で戦う";
+  };
+  update(p1GearGrid, p1GearInfo, selectedGearP1);
+  update(p2GearGrid, p2GearInfo, selectedGearP2);
+}
+
+function buildGearSelectUI() {
+  const build = (grid, player) => {
+    grid.innerHTML = "";
+    EQUIPMENT_CHOICES.forEach((gearEmoji) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "gear-btn";
+      btn.dataset.gear = gearEmoji || "none";
+      btn.textContent = gearEmoji || "なし";
+      btn.title = gearEmoji ? `${EQUIPMENT_DEFS[gearEmoji].name}：${EQUIPMENT_DEFS[gearEmoji].desc}` : "装備なし";
+      btn.addEventListener("click", () => {
+        if (player === "p1") selectedGearP1 = gearEmoji;
+        else selectedGearP2 = gearEmoji;
+        updateGearInfoUI();
+      });
+      grid.appendChild(btn);
+    });
+  };
+  build(p1GearGrid, "p1");
+  build(p2GearGrid, "p2");
+  updateGearInfoUI();
+}
+
 function updateAbilityInfoUI() {
   const def1 = CHARACTER_DEFS[selectedP1];
   const def2 = CHARACTER_DEFS[selectedP2];
@@ -255,6 +294,7 @@ function updateAbilityInfoUI() {
   p2SpecialDesc.textContent = `${def2.specialName}: ${def2.specialDesc}`;
   renderStats(p1Stats, def1);
   renderStats(p2Stats, def2);
+  updateGearInfoUI();
 }
 
 function buildCharacterSelectUI() {
@@ -288,6 +328,7 @@ function buildCharacterSelectUI() {
   });
 
   updateAbilityInfoUI();
+  buildGearSelectUI();
 }
 
 function refreshActiveButtons() {
@@ -338,12 +379,15 @@ function openCharScreen() {
   charScreen.classList.remove("hidden");
 }
 
-function createFighter(id, label, emoji, x, facing, accentColor) {
+function createFighter(id, label, emoji, gearEmoji, x, facing, accentColor) {
   const def = CHARACTER_DEFS[emoji];
+  const gear = gearEmoji ? EQUIPMENT_DEFS[gearEmoji] : {};
   return {
     id,
     label,
     emoji,
+    gearEmoji,
+    gear,
     def,
     accentColor,
     x,
@@ -352,10 +396,11 @@ function createFighter(id, label, emoji, x, facing, accentColor) {
     h: PLAYER_H,
     vx: 0,
     vy: 0,
-    hp: MAX_HP,
+    maxHp: MAX_HP + (gear.maxHpBonus || 0),
+    hp: MAX_HP + (gear.maxHpBonus || 0),
     facing,
     onGround: true,
-    jumpsLeft: MAX_JUMPS,
+    jumpsLeft: MAX_JUMPS + (gear.jumpBonus || 0),
     invincibleTimer: 0,
     starTimer: 0,
     orbitTimer: 0,
@@ -397,8 +442,8 @@ function startBattle() {
   screenShakeTimer = 0;
   screenShakeMagnitude = 0;
   fighters = [
-    createFighter("p1", "1P", selectedP1, 110, 1, "#72efdd"),
-    createFighter("p2", "2P", selectedP2, VIEW_WIDTH - 110 - PLAYER_W, -1, "#ff70a6")
+    createFighter("p1", "1P", selectedP1, selectedGearP1, 110, 1, "#72efdd"),
+    createFighter("p2", "2P", selectedP2, selectedGearP2, VIEW_WIDTH - 110 - PLAYER_W, -1, "#ff70a6")
   ];
   screenMode = "battle";
   paused = false;
@@ -543,7 +588,7 @@ function updateHud() {
     const label = (opt.autoFire ? "🔄" : "") + (opt.autoAim ? "🎯" : "") + (opt.fullAuto ? "⚡" : "");
     return `<span class="assist-pill" title="アシスト有効">${label}</span>`;
   };
-  const hearts = (f) => `<span class="hp-hearts">${"♥".repeat(Math.max(0, f.hp))}${"♡".repeat(Math.max(0, MAX_HP - f.hp))}</span>`;
+  const hearts = (f) => `<span class="hp-hearts">${"♥".repeat(Math.max(0, f.hp))}${"♡".repeat(Math.max(0, f.maxHp - f.hp))}</span>`;
   const wins = (n) => (n > 0 ? `<span class="wins">🏆${n}</span>` : "");
   p1Hud.innerHTML = `1P ${f1.emoji}${statusIcons(f1)} ${hearts(f1)} ${formatSpBadge(f1, "Q")} ${assistBadge("p1")} ${wins(scores.p1)}`;
   p2Hud.innerHTML = `${wins(scores.p2)} ${assistBadge("p2")} 2P ${f2.emoji}${statusIcons(f2)} ${hearts(f2)} ${formatSpBadge(f2, "左Click")}`;
@@ -652,7 +697,7 @@ function applyItemEffect(fighter, item) {
 function triggerPulse(fighter, chargeRatio = 0) {
   if (fighter.pulseCooldown > 0 || fighter.mindChargeTimer > 0) return;
   fighter.pulseTimer = PULSE_DURATION;
-  fighter.pulseCooldown = fighter.def.pulseCooldown;
+  fighter.pulseCooldown = fighter.def.pulseCooldown * (fighter.gear.pulseCooldownMultiplier || 1);
   Sound.sfx("shoot", chargeRatio);
   fighter.squashX = 1.2;
   fighter.squashY = 0.85;
@@ -673,7 +718,7 @@ function triggerPulse(fighter, chargeRatio = 0) {
   const clampedRatio = Math.max(0, Math.min(1, chargeRatio));
   const rangeLife =
     fighter.def.minPulseRangeLife +
-    (fighter.def.maxPulseRangeLife - fighter.def.minPulseRangeLife) * clampedRatio;
+    (fighter.def.maxPulseRangeLife - fighter.def.minPulseRangeLife) * clampedRatio * (fighter.gear.pulseRangeMultiplier || 1);
 
   const style = fighter.def.projectileStyle || "mega_wave";
   const isBullet = style === "bullet";
@@ -694,12 +739,12 @@ function triggerPulse(fighter, chargeRatio = 0) {
     x: cx + fighter.facing * (isBullet ? 20 : 22),
     y: cy,
     baseY: cy,
-    vx: fighter.facing * fighter.def.pulseSpeed,
+    vx: fighter.facing * fighter.def.pulseSpeed * (fighter.gear.pulseSpeedMultiplier || 1),
     vy: isBounceBall ? -320 - clampedRatio * 120 : isPoopBomb ? -210 - clampedRatio * 95 : 0,
     gravity: isBounceBall ? 1350 : isPoopBomb ? 980 : 0,
     dir: fighter.facing,
-    radius: fighter.def.pulseRadius,
-    knockVx: baseKnock + clampedRatio * 65,
+    radius: fighter.def.pulseRadius * (fighter.gear.pulseRadiusMultiplier || 1),
+    knockVx: (baseKnock + clampedRatio * 65) * (fighter.gear.knockbackMultiplier || 1),
     chillDuration: fighter.def.chillOnHit || 0,
     homingStrength: fighter.def.homingStrength || 0,
     life: rangeLife,
@@ -1328,7 +1373,7 @@ function hitFighter(target, attackerCenterX, baseKnockVx = 340, chillDuration = 
     }
   }
   const pushDir = (target.x + target.w / 2) >= attackerCenterX ? 1 : -1;
-  target.vx = pushDir * baseKnockVx * target.def.knockbackScale;
+  target.vx = pushDir * baseKnockVx * target.def.knockbackScale * (target.gear.knockbackMultiplier || 1);
   target.vy = -340;
   target.onGround = false;
   target.jumpsLeft = 0;
@@ -1444,7 +1489,7 @@ function stepFighter(f, input, dt, platforms) {
   }
 
   if (!isSpecialActive(f) && !f.warpBeacon && !f.atlasPin && f.specialCooldown > 0) {
-    f.specialCooldown = Math.max(0, f.specialCooldown - dt);
+    f.specialCooldown = Math.max(0, f.specialCooldown - dt * (f.gear.specialCooldownRate || 1));
   }
 
   // 攻撃チャージ＆オートチャージ連射＆フルオート攻撃アシスト
@@ -1452,7 +1497,7 @@ function stepFighter(f, input, dt, platforms) {
 
   if (effectivePulseHeld && f.pulseCooldown <= 0 && f.mindChargeTimer <= 0) {
     f.isChargingPulse = true;
-    f.pulseChargeTime = Math.min(MAX_CHARGE_TIME, f.pulseChargeTime + dt);
+    f.pulseChargeTime = Math.min(MAX_CHARGE_TIME, f.pulseChargeTime + dt / (f.gear.chargeMultiplier || 1));
 
     // オートチャージ連射 または フルオート攻撃時は最大チャージで自動発射
     if ((assist.autoFire || assist.fullAuto) && f.pulseChargeTime >= MAX_CHARGE_TIME) {
@@ -1503,7 +1548,7 @@ function stepFighter(f, input, dt, platforms) {
     if (moveDir !== 0) {
       f.facing = moveDir;
       const accel = f.onGround ? 2400 : 1500;
-      const desiredVx = moveDir * f.def.moveSpeed * speedBonus;
+      const desiredVx = moveDir * f.def.moveSpeed * (f.gear.moveSpeedMultiplier || 1) * speedBonus;
       if (f.vx < desiredVx) {
         f.vx = Math.min(desiredVx, f.vx + accel * dt);
       } else if (f.vx > desiredVx) {
@@ -1541,7 +1586,7 @@ function stepFighter(f, input, dt, platforms) {
           f.pendingSpecialCooldown = 0;
         }
       }
-      f.jumpsLeft = MAX_JUMPS - 1;
+      f.jumpsLeft = MAX_JUMPS + (f.gear.jumpBonus || 0) - 1;
       f.squashX = 0.78;
       f.squashY = 1.25;
       spawnParticles(f.x + f.w / 2, f.y + f.h, 6, f.accentColor);
@@ -1637,7 +1682,7 @@ function stepFighter(f, input, dt, platforms) {
         }
         f.vy = 0;
         f.onGround = true;
-        f.jumpsLeft = MAX_JUMPS;
+        f.jumpsLeft = MAX_JUMPS + (f.gear.jumpBonus || 0);
         break;
       }
     }
