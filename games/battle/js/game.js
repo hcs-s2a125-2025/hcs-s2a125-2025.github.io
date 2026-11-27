@@ -134,6 +134,7 @@ let ufoDrones = [];
 let fieldItems = [];
 let itemSpawnTimer = 5.5;
 let particles = [];
+let impactFlashes = [];
 let timeElapsed = 0;
 let screenShakeTimer = 0;
 let screenShakeMagnitude = 0;
@@ -214,7 +215,7 @@ function buildStageSelectUI() {
     card.appendChild(nameEl);
     card.appendChild(descEl);
 
-    card.addEventListener("click", () => selectStage(idx));
+    card.addEventListener("click", () => { selectStage(idx); animateUiPop(card); });
 
     stageGrid.appendChild(card);
   });
@@ -225,6 +226,7 @@ function selectStage(idx) {
   Array.from(stageGrid.children).forEach((el, i) => {
     el.classList.toggle("active", i === selectedStageIndex);
   });
+  animateUiPop(stageGrid.children[selectedStageIndex]);
 }
 
 function clamp01(v) { return Math.max(0.06, Math.min(1, v)); }
@@ -272,6 +274,7 @@ function buildGearSelectUI() {
       btn.addEventListener("click", () => {
         if (player === "p1") selectedGearP1 = gearEmoji;
         else selectedGearP2 = gearEmoji;
+        animateUiPop(btn);
         updateGearInfoUI();
       });
       grid.appendChild(btn);
@@ -297,6 +300,8 @@ function updateAbilityInfoUI() {
   p2SpecialDesc.textContent = `${def2.specialName}: ${def2.specialDesc}`;
   renderStats(p1Stats, def1);
   renderStats(p2Stats, def2);
+  animateCharacterPreview(p1Preview);
+  animateCharacterPreview(p2Preview);
   updateGearInfoUI();
 }
 
@@ -312,6 +317,7 @@ function buildCharacterSelectUI() {
     btn1.textContent = emoji;
     btn1.addEventListener("click", () => {
       selectedP1 = emoji;
+      animateUiPop(btn1);
       refreshActiveButtons();
       updateAbilityInfoUI();
     });
@@ -324,6 +330,7 @@ function buildCharacterSelectUI() {
     btn2.textContent = emoji;
     btn2.addEventListener("click", () => {
       selectedP2 = emoji;
+      animateUiPop(btn2);
       refreshActiveButtons();
       updateAbilityInfoUI();
     });
@@ -359,7 +366,59 @@ function clearInputs() {
   p2Input.specialPressed = false;
 }
 
-function animatePanelIn(panel) {\n  if (!window.gsap || !panel) return;\n  const title = panel.querySelector(".screen-title");\n  const cards = panel.querySelectorAll(".stage-card, .player-panel, .action-row > button");\n  gsap.fromTo(panel, { opacity: 0 }, { opacity: 1, duration: 0.22, overwrite: true });\n  if (title) gsap.fromTo(title, { y: -14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.38, ease: "back.out(1.5)", overwrite: true });\n  if (cards.length) gsap.fromTo(cards, { y: 12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.32, stagger: 0.035, ease: "power2.out", overwrite: true, delay: 0.05 });\n}\n\nfunction openStageScreen() {
+const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+
+function animatePanelIn(panel) {
+  if (!panel || !window.gsap || prefersReducedMotion) return;
+  const title = panel.querySelector(".screen-title");
+  const cards = panel.querySelectorAll(".stage-card, .player-panel, .action-row > button");
+  gsap.killTweensOf([panel, title, ...cards]);
+  gsap.fromTo(panel, { opacity: 0 }, { opacity: 1, duration: 0.24, ease: "power1.out", overwrite: true });
+  if (title) {
+    gsap.fromTo(title, { y: -18, opacity: 0, scale: 0.96 }, {
+      y: 0, opacity: 1, scale: 1, duration: 0.46, ease: "back.out(1.55)", overwrite: true
+    });
+  }
+  if (cards.length) {
+    gsap.fromTo(cards, { y: 18, opacity: 0, scale: 0.985 }, {
+      y: 0, opacity: 1, scale: 1, duration: 0.38, stagger: 0.045,
+      ease: "power2.out", overwrite: true, delay: 0.06
+    });
+  }
+}
+
+function animateUiPop(element) {
+  if (!element || !window.gsap || prefersReducedMotion) return;
+  gsap.fromTo(element, { scale: 0.88 }, {
+    scale: 1, duration: 0.26, ease: "back.out(2.1)", overwrite: true,
+    transformOrigin: "50% 50%"
+  });
+}
+
+function animateCharacterPreview(element) {
+  if (!element || !window.gsap || prefersReducedMotion) return;
+  gsap.fromTo(element, { scale: 0.68, rotation: -9, opacity: 0.55 }, {
+    scale: 1, rotation: 0, opacity: 1, duration: 0.34,
+    ease: "back.out(2)", overwrite: true
+  });
+}
+
+function celebrateVictory() {
+  if (prefersReducedMotion || typeof window.confetti !== "function") return;
+  const colors = ["#72efdd", "#ff70a6", "#ffd166", "#c77dff", "#ffffff"];
+  window.confetti({
+    particleCount: 70, spread: 78, startVelocity: 48, ticks: 190,
+    gravity: 0.9, scalar: 1.05, origin: { x: 0.12, y: 0.62 },
+    colors, disableForReducedMotion: true
+  });
+  window.confetti({
+    particleCount: 70, angle: 120, spread: 78, startVelocity: 48,
+    ticks: 190, gravity: 0.9, scalar: 1.05, origin: { x: 0.88, y: 0.62 },
+    colors, disableForReducedMotion: true
+  });
+}
+
+function openStageScreen() {
   clearInputs();
   setPaused(false);
   Sound.setBgm("menu");
@@ -368,6 +427,7 @@ function animatePanelIn(panel) {\n  if (!window.gsap || !panel) return;\n  const
   charScreen.classList.add("hidden");
   resultOverlay.classList.add("hidden");
   stageScreen.classList.remove("hidden");
+  animatePanelIn(stageScreen);
 }
 
 function openCharScreen() {
@@ -380,6 +440,7 @@ function openCharScreen() {
   resultOverlay.classList.add("hidden");
   selectedStageBanner.textContent = `選択ステージ: ${getCurrentStage().name}`;
   charScreen.classList.remove("hidden");
+  animatePanelIn(charScreen);
 }
 
 function getJumpCapacity(def, gear) {
@@ -450,6 +511,7 @@ function startBattle() {
   fieldItems = [];
   itemSpawnTimer = 5.5;
   particles = [];
+  impactFlashes = [];
   screenShakeTimer = 0;
   screenShakeMagnitude = 0;
   fighters = [
@@ -518,7 +580,13 @@ function finishMatch(winner, reason) {
     f.warpBeacon = null;
     f.atlasPin = null;
   }
-  triggerScreenShake(0.35, 10);
+  triggerScreenShake(0.38, 12);
+  if (winner) {
+    const wx = winner.x + winner.w / 2;
+    const wy = winner.y + winner.h / 2;
+    spawnImpactFlash(wx, wy, "#ffd166", 112, 0.42);
+    spawnParticles(wx, wy, 34, "#ffd166");
+  }
   Sound.sfx("ko");
   updateHud();
 }
@@ -547,6 +615,22 @@ function showResultOverlay() {
     (info.reason === "time" ? "タイムアップ判定（残りHPが多い方の勝ち）　" : "") +
     `通算  1P ${scores.p1} - ${scores.p2} 2P`;
   resultOverlay.classList.remove("hidden");
+  if (window.gsap && !prefersReducedMotion) {
+    const title = resultOverlay.querySelector("h2");
+    const subtitle = resultOverlay.querySelector(".result-sub");
+    const buttons = resultOverlay.querySelectorAll(".result-actions button");
+    gsap.fromTo(resultOverlay, { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power1.out", overwrite: true });
+    if (title) gsap.fromTo(title, { y: 24, scale: 0.72, rotation: -3, opacity: 0 }, {
+      y: 0, scale: 1, rotation: 0, opacity: 1, duration: 0.62, ease: "back.out(1.7)", delay: 0.08, overwrite: true
+    });
+    if (subtitle) gsap.fromTo(subtitle, { y: 12, opacity: 0 }, {
+      y: 0, opacity: 1, duration: 0.38, delay: 0.2, ease: "power2.out", overwrite: true
+    });
+    if (buttons.length) gsap.fromTo(buttons, { y: 18, opacity: 0 }, {
+      y: 0, opacity: 1, duration: 0.34, stagger: 0.07, delay: 0.26, ease: "power2.out", overwrite: true
+    });
+  }
+  if (info.winner) celebrateVictory();
   Sound.sfx("win");
 }
 
@@ -624,18 +708,33 @@ function updateHud() {
 }
 
 function spawnParticles(x, y, count, color) {
-  for (let i = 0; i < count; i++) {
+  const safeCount = Math.max(0, Math.min(64, Math.floor(count)));
+  for (let i = 0; i < safeCount; i++) {
+    const angle = (Math.PI * 2 * i / Math.max(1, safeCount)) + (Math.random() - 0.5) * 0.72;
+    const speed = 72 + Math.random() * 205;
+    const life = 0.28 + Math.random() * 0.34;
+    const shape = i % 4 === 0 ? "spark" : i % 3 === 0 ? "circle" : "diamond";
     particles.push({
-      x: x + (Math.random() - 0.5) * 16,
-      y: y + (Math.random() - 0.5) * 10,
-      vx: (Math.random() - 0.5) * 240,
-      vy: -60 - Math.random() * 150,
-      size: 3 + Math.random() * 4,
-      life: 0.35 + Math.random() * 0.2,
-      maxLife: 0.55,
-      color
+      x: x + (Math.random() - 0.5) * 9,
+      y: y + (Math.random() - 0.5) * 9,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 24,
+      gravity: 230 + Math.random() * 180,
+      size: 2 + Math.random() * 4.5,
+      life,
+      maxLife: life,
+      color,
+      shape,
+      rotation: Math.random() * Math.PI,
+      spin: (Math.random() - 0.5) * 9
     });
   }
+  if (particles.length > 260) particles.splice(0, particles.length - 260);
+}
+
+function spawnImpactFlash(x, y, color = "#ffffff", maxRadius = 48, life = 0.22) {
+  impactFlashes.push({ x, y, color, maxRadius, life, maxLife: life });
+  if (impactFlashes.length > 48) impactFlashes.shift();
 }
 
 function spawnPopup(x, y, text, color = "#ffd166") {
@@ -809,7 +908,8 @@ function triggerPulse(fighter, chargeRatio = 0) {
     });
   }
 
-  spawnParticles(cx + fighter.facing * 22, cy, isBullet ? 6 : 8, projColor);
+  spawnParticles(cx + fighter.facing * 22, cy, isBullet ? 8 : 12, projColor);
+  spawnImpactFlash(cx + fighter.facing * 22, cy, projColor, 34, 0.16);
   if (style === "party_popper") {
     shockwaves.push({
       ownerId: fighter.id, x: cx + fighter.facing * 18, y: cy,
@@ -835,6 +935,7 @@ function createSlimePool(pl, x, y) {
 }
 
 function spawnProjectileImpact(pl, x, y, hitTargetId = null) {
+  spawnImpactFlash(x, y, pl.color || "#ffd166", Math.max(34, pl.impactBurstRadius || 0), 0.22);
   if (pl.impactBurstRadius > 0) {
     shockwaves.push({
       ownerId: pl.ownerId,
@@ -1473,6 +1574,7 @@ function hitFighter(target, attackerCenterX, baseKnockVx = 340, chillDuration = 
   triggerScreenShake(0.14, target.hp <= 0 ? 9 : 4);
   Sound.sfx("hit");
   spawnPopup(target.x + target.w / 2, target.y - 6, "-1", "#ff5c8a");
+  spawnImpactFlash(target.x + target.w / 2, target.y + target.h / 2, "#ff5c8a", 58, 0.24);
   if (chillDuration > 0) {
     target.chillTimer = Math.max(target.chillTimer, chillDuration);
     spawnParticles(target.x + target.w / 2, target.y + target.h / 2, 12, "#70e4ff");
@@ -2131,6 +2233,14 @@ function update(dt) {
         pl.y += (pl.vy || 0) * dt;
       }
 
+      pl.trail = pl.trail || [];
+      pl.trailClock = (pl.trailClock || 0) + dt;
+      if (pl.trailClock >= 0.035) {
+        pl.trailClock %= 0.035;
+        pl.trail.push({ x: pl.x, y: pl.y });
+        if (pl.trail.length > 9) pl.trail.shift();
+      }
+
       if (pl.style === "cool_triple_wave" && Math.random() < 0.75) {
         spawnParticles(pl.x, pl.y, 1, pl.playerColor || pl.color);
       }
@@ -2479,11 +2589,18 @@ function update(dt) {
     if (fp.life <= 0) floatingPopups.splice(i, 1);
   }
 
+  for (let i = impactFlashes.length - 1; i >= 0; i--) {
+    impactFlashes[i].life -= dt;
+    if (impactFlashes[i].life <= 0) impactFlashes.splice(i, 1);
+  }
+
   for (let i = particles.length - 1; i >= 0; i--) {
     const pt = particles[i];
     pt.x += pt.vx * dt;
     pt.y += pt.vy * dt;
-    pt.vy += 320 * dt;
+    pt.vx *= Math.max(0, 1 - dt * 1.1);
+    pt.vy += (pt.gravity ?? 320) * dt;
+    pt.rotation = (pt.rotation || 0) + (pt.spin || 0) * dt;
     pt.life -= dt;
     if (pt.life <= 0) particles.splice(i, 1);
   }
@@ -2574,6 +2691,19 @@ function drawArena() {
     ctx.lineTo(VIEW_WIDTH, y);
     ctx.stroke();
   }
+
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+  for (let i = 0; i < 3; i++) {
+    const bandX = ((timeElapsed * (18 + i * 7) + i * 390) % (VIEW_WIDTH + 260)) - 130;
+    const band = ctx.createLinearGradient(bandX - 78, 0, bandX + 78, 0);
+    band.addColorStop(0, "rgba(255,255,255,0)");
+    band.addColorStop(0.5, i % 2 === 0 ? "rgba(114,239,221,0.035)" : "rgba(199,125,255,0.04)");
+    band.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = band;
+    ctx.fillRect(bandX - 78, 0, 156, GROUND_Y);
+  }
+  ctx.restore();
 
   ctx.fillStyle = stage.floorAccent;
   for (const o of decor.orbs) {
@@ -2933,6 +3063,38 @@ function drawFighters() {
     ctx.ellipse(0, f.h / 2 - 2 - bob, 18, 6, 0, 0, Math.PI * 2);
     ctx.stroke();
 
+    const auraColor = f.def.projectileColorOverride || f.accentColor;
+    const auraPulse = 1 + Math.sin(timeElapsed * 5.5 + (f.id === "p2" ? 1.2 : 0)) * 0.06;
+    const auraPower = (f.isChargingPulse || isSpecialActive(f) || f.starTimer > 0) ? 1 : 0.48;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.globalAlpha = 0.22 * auraPower;
+    const aura = ctx.createRadialGradient(0, 2, 5, 0, 2, 38 * auraPulse);
+    aura.addColorStop(0, "rgba(255,255,255,0.22)");
+    aura.addColorStop(0.38, auraColor + "55");
+    aura.addColorStop(1, auraColor + "00");
+    ctx.fillStyle = aura;
+    ctx.beginPath();
+    ctx.arc(0, 2, 38 * auraPulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 0.34 * auraPower;
+    ctx.strokeStyle = auraColor;
+    ctx.lineWidth = f.isChargingPulse ? 2.2 : 1.1;
+    ctx.beginPath();
+    ctx.arc(0, 0, 29 + Math.sin(timeElapsed * 4 + f.x * 0.02) * 2, 0, Math.PI * 2);
+    ctx.stroke();
+    for (let mote = 0; mote < 3; mote++) {
+      const angle = timeElapsed * (1.8 + mote * 0.18) + mote * Math.PI * 2 / 3 + (f.id === "p2" ? 0.6 : 0);
+      const mx = Math.cos(angle) * 34;
+      const my = Math.sin(angle) * 17;
+      ctx.globalAlpha = 0.55 * auraPower;
+      ctx.fillStyle = mote === 0 ? "#ffffff" : auraColor;
+      ctx.beginPath();
+      ctx.arc(mx, my, mote === 0 ? 2.4 : 1.7, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
     if (f.isChargingPulse) {
       const chargeRatio = Math.min(1, f.pulseChargeTime / MAX_CHARGE_TIME);
       const isMax = chargeRatio >= 0.99;
@@ -3102,7 +3264,48 @@ function drawPulsesAndParticles() {
     ctx.restore();
   }
 
+  for (const fx of impactFlashes) {
+    const progress = 1 - Math.max(0, fx.life / fx.maxLife);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const radius = 7 + (fx.maxRadius - 7) * eased;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.globalAlpha = Math.max(0, 1 - progress);
+    ctx.strokeStyle = fx.color;
+    ctx.shadowColor = fx.color;
+    ctx.shadowBlur = 14;
+    ctx.lineWidth = 4 * (1 - progress) + 1;
+    ctx.beginPath();
+    ctx.arc(fx.x, fx.y, radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha *= 0.45;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(fx.x, fx.y, radius * 0.68, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   for (const pl of pulses) {
+    if (pl.trail && pl.trail.length > 1) {
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      for (let j = 1; j < pl.trail.length; j++) {
+        const strength = j / pl.trail.length;
+        ctx.globalAlpha = strength * 0.38;
+        ctx.strokeStyle = pl.color || "#ffffff";
+        ctx.lineWidth = Math.max(1, pl.radius * (0.12 + strength * 0.38));
+        ctx.shadowColor = pl.color || "#ffffff";
+        ctx.shadowBlur = 4 + 9 * strength;
+        ctx.beginPath();
+        ctx.moveTo(pl.trail[j - 1].x, pl.trail[j - 1].y);
+        ctx.lineTo(pl.trail[j].x, pl.trail[j].y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
     const lifeRatio = Math.max(0, pl.life / pl.maxLife);
     const alpha = Math.min(1, lifeRatio / 0.18);
     const angle = Math.atan2(pl.vy || 0, pl.vx || pl.dir);
@@ -3581,9 +3784,39 @@ function drawPulsesAndParticles() {
   }
 
   for (const pt of particles) {
+    const fade = Math.max(0, pt.life / pt.maxLife);
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.globalAlpha = fade;
+    ctx.translate(pt.x, pt.y);
+    ctx.rotate(pt.rotation || 0);
     ctx.fillStyle = pt.color;
-    ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife);
-    ctx.fillRect(pt.x - pt.size / 2, pt.y - pt.size / 2, pt.size, pt.size);
+    ctx.strokeStyle = pt.color;
+    ctx.shadowColor = pt.color;
+    ctx.shadowBlur = 5 + pt.size * 1.8;
+    if (pt.shape === "circle") {
+      ctx.beginPath();
+      ctx.arc(0, 0, pt.size * 0.48, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (pt.shape === "spark") {
+      ctx.lineWidth = Math.max(1, pt.size * 0.32);
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(-pt.size * 1.5, 0);
+      ctx.lineTo(pt.size * 1.5, 0);
+      ctx.moveTo(0, -pt.size * 0.7);
+      ctx.lineTo(0, pt.size * 0.7);
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(0, -pt.size);
+      ctx.lineTo(pt.size * 0.62, 0);
+      ctx.lineTo(0, pt.size);
+      ctx.lineTo(-pt.size * 0.62, 0);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
   }
   ctx.globalAlpha = 1;
 }
