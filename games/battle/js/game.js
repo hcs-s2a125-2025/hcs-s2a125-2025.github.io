@@ -372,7 +372,7 @@ function animatePanelIn(panel) {
   if (!panel || !window.gsap || prefersReducedMotion) return;
   const title = panel.querySelector(".screen-title");
   const cards = panel.querySelectorAll(".stage-card, .player-panel, .action-row > button");
-  gsap.killTweensOf([panel, title, ...cards]);
+  gsap.killTweensOf([panel, title, ...cards].filter(Boolean));
   gsap.fromTo(panel, { opacity: 0 }, { opacity: 1, duration: 0.24, ease: "power1.out", overwrite: true });
   if (title) {
     gsap.fromTo(title, { y: -18, opacity: 0, scale: 0.96 }, {
@@ -2847,6 +2847,19 @@ function drawOverlayBanners() {
   }
 }
 
+const CHARACTER_AURA_COLORS = {
+  "🤩": "#ffd166", "🤪": "#c77dff", "🥴": "#4cc9f0", "😎": "#72efdd",
+  "🫨": "#ff70a6", "🤯": "#ff9f1c", "🤠": "#ffd166", "🤡": "#ff5c8a",
+  "🤑": "#ffd166", "🗺️": "#f4c95d", "💩": "#b08968", "💀": "#c4b5fd",
+  "🫠": "#8dff7a", "🫥": "#9bf6ff", "🥶": "#70e4ff", "🈁": "#4cc9f0",
+  "🪬": "#4cc9f0", "🤖": "#a7b6ff", "🥳": "#ffd166", "👾": "#c77dff",
+  "😇": "#fff1a8", "😈": "#ff5c8a", "🤕": "#fff1d0"
+};
+
+function getCharacterAuraColor(fighter) {
+  return CHARACTER_AURA_COLORS[fighter.emoji] || fighter.def.projectileColorOverride || fighter.accentColor;
+}
+
 function drawFighters() {
   for (const f of fighters) {
     if (f.warpBeacon) {
@@ -3063,7 +3076,7 @@ function drawFighters() {
     ctx.ellipse(0, f.h / 2 - 2 - bob, 18, 6, 0, 0, Math.PI * 2);
     ctx.stroke();
 
-    const auraColor = f.def.projectileColorOverride || f.accentColor;
+    const auraColor = getCharacterAuraColor(f);
     const auraPulse = 1 + Math.sin(timeElapsed * 5.5 + (f.id === "p2" ? 1.2 : 0)) * 0.06;
     const auraPower = (f.isChargingPulse || isSpecialActive(f) || f.starTimer > 0) ? 1 : 0.48;
     ctx.save();
