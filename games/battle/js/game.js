@@ -9,7 +9,8 @@ let renderScale = 1;
 function resizeCanvas() {
   const rect = canvas.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
-  const sc = Math.max(1, Math.min(2.5, (rect.width / VIEW_WIDTH) * dpr));
+  // Cap the backing store: huge devicePixelRatio values multiply every Canvas draw cost.
+  const sc = Math.max(1, Math.min(1.5, (rect.width / VIEW_WIDTH) * dpr));
   const w = Math.round(VIEW_WIDTH * sc);
   const h = Math.round(VIEW_HEIGHT * sc);
   if (canvas.width !== w || canvas.height !== h) {
@@ -708,7 +709,7 @@ function updateHud() {
 }
 
 function spawnParticles(x, y, count, color) {
-  const safeCount = Math.max(0, Math.min(64, Math.floor(count)));
+  const safeCount = Math.max(0, Math.min(28, Math.floor(count), 140 - particles.length));
   for (let i = 0; i < safeCount; i++) {
     const angle = (Math.PI * 2 * i / Math.max(1, safeCount)) + (Math.random() - 0.5) * 0.72;
     const speed = 72 + Math.random() * 205;
@@ -729,12 +730,11 @@ function spawnParticles(x, y, count, color) {
       spin: (Math.random() - 0.5) * 9
     });
   }
-  if (particles.length > 260) particles.splice(0, particles.length - 260);
 }
 
 function spawnImpactFlash(x, y, color = "#ffffff", maxRadius = 48, life = 0.22) {
   impactFlashes.push({ x, y, color, maxRadius, life, maxLife: life });
-  if (impactFlashes.length > 48) impactFlashes.shift();
+  if (impactFlashes.length > 20) impactFlashes.shift();
 }
 
 function spawnPopup(x, y, text, color = "#ffd166") {
@@ -2236,10 +2236,10 @@ function update(dt) {
 
       pl.trail = pl.trail || [];
       pl.trailClock = (pl.trailClock || 0) + dt;
-      if (pl.trailClock >= 0.035) {
-        pl.trailClock %= 0.035;
+      if (pl.trailClock >= 0.065) {
+        pl.trailClock %= 0.065;
         pl.trail.push({ x: pl.x, y: pl.y });
-        if (pl.trail.length > 9) pl.trail.shift();
+        if (pl.trail.length > 5) pl.trail.shift();
       }
 
       if (pl.style === "cool_triple_wave" && Math.random() < 0.75) {
@@ -2694,18 +2694,13 @@ function drawArena() {
     ctx.stroke();
   }
 
-  ctx.save();
-  ctx.globalCompositeOperation = "screen";
-  for (let i = 0; i < 3; i++) {
-    const bandX = ((timeElapsed * (18 + i * 7) + i * 390) % (VIEW_WIDTH + 260)) - 130;
-    const band = ctx.createLinearGradient(bandX - 78, 0, bandX + 78, 0);
-    band.addColorStop(0, "rgba(255,255,255,0)");
-    band.addColorStop(0.5, i % 2 === 0 ? "rgba(114,239,221,0.035)" : "rgba(199,125,255,0.04)");
-    band.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = band;
-    ctx.fillRect(bandX - 78, 0, 156, GROUND_Y);
-  }
-  ctx.restore();
+  // Low-cost animated light bands (solid translucent strips instead of gradients).
+  ctx.fillStyle = "rgba(114,239,221,0.022)";
+  const bandX1 = ((timeElapsed * 22) % (VIEW_WIDTH + 180)) - 90;
+  ctx.fillRect(bandX1, 0, 42, GROUND_Y);
+  ctx.fillStyle = "rgba(199,125,255,0.018)";
+  const bandX2 = ((timeElapsed * 15 + 410) % (VIEW_WIDTH + 180)) - 90;
+  ctx.fillRect(bandX2, 0, 30, GROUND_Y);
 
   ctx.fillStyle = stage.floorAccent;
   for (const o of decor.orbs) {
@@ -2725,12 +2720,11 @@ function drawArena() {
       fg.addColorStop(1, "#0f0a24");
       ctx.fillStyle = fg;
       ctx.fillRect(p.x, p.y, p.w, p.h);
-      ctx.save();
-      ctx.shadowColor = stage.floorAccent;
-      ctx.shadowBlur = 14;
       ctx.fillStyle = stage.floorAccent;
       ctx.fillRect(p.x, p.y, p.w, 5);
-      ctx.restore();
+      ctx.globalAlpha = 0.28;
+      ctx.fillRect(p.x, p.y + 5, p.w, 2);
+      ctx.globalAlpha = 1;
       ctx.strokeStyle = "rgba(255,255,255,0.05)";
       ctx.lineWidth = 1;
       for (let x = 0; x < p.w; x += 48) {
@@ -2744,13 +2738,9 @@ function drawArena() {
       ctx.beginPath();
       ctx.roundRect(p.x, p.y, p.w, p.h, 5);
       ctx.fill();
-      ctx.save();
-      ctx.shadowColor = stage.wallAccent || "#72efdd";
-      ctx.shadowBlur = 10;
       ctx.strokeStyle = stage.wallAccent || "#72efdd";
       ctx.lineWidth = 2;
       ctx.stroke();
-      ctx.restore();
       ctx.fillStyle = stage.wallAccent || "#72efdd";
       ctx.globalAlpha = 0.55 + 0.25 * Math.sin(timeElapsed * 3 + p.x);
       ctx.fillRect(p.x + p.w / 2 - 2, p.y + 8, 4, Math.max(8, p.h - 16));
@@ -2760,12 +2750,8 @@ function drawArena() {
       ctx.beginPath();
       ctx.roundRect(p.x, p.y, p.w, p.h, 6);
       ctx.fill();
-      ctx.save();
-      ctx.shadowColor = stage.shelfAccent;
-      ctx.shadowBlur = 8;
       ctx.fillStyle = stage.shelfAccent;
       ctx.fillRect(p.x + 4, p.y + 2, p.w - 8, 4);
-      ctx.restore();
     }
   }
 
@@ -3079,35 +3065,26 @@ function drawFighters() {
     ctx.stroke();
 
     const auraColor = getCharacterAuraColor(f);
-    const auraPulse = 1 + Math.sin(timeElapsed * 5.5 + (f.id === "p2" ? 1.2 : 0)) * 0.06;
+    const auraPulse = 1 + Math.sin(timeElapsed * 5.5 + (f.id === "p2" ? 1.2 : 0)) * 0.04;
     const auraPower = (f.isChargingPulse || isSpecialActive(f) || f.starTimer > 0) ? 1 : 0.48;
     ctx.save();
-    ctx.globalCompositeOperation = "lighter";
-    ctx.globalAlpha = 0.22 * auraPower;
-    const aura = ctx.createRadialGradient(0, 2, 5, 0, 2, 38 * auraPulse);
-    aura.addColorStop(0, "rgba(255,255,255,0.22)");
-    aura.addColorStop(0.38, auraColor + "55");
-    aura.addColorStop(1, auraColor + "00");
-    ctx.fillStyle = aura;
+    ctx.globalAlpha = 0.075 * auraPower;
+    ctx.fillStyle = auraColor;
     ctx.beginPath();
-    ctx.arc(0, 2, 38 * auraPulse, 0, Math.PI * 2);
+    ctx.arc(0, 2, 34 * auraPulse, 0, Math.PI * 2);
     ctx.fill();
-    ctx.globalAlpha = 0.34 * auraPower;
+    ctx.globalAlpha = 0.28 * auraPower;
     ctx.strokeStyle = auraColor;
-    ctx.lineWidth = f.isChargingPulse ? 2.2 : 1.1;
+    ctx.lineWidth = f.isChargingPulse ? 2 : 1.2;
     ctx.beginPath();
     ctx.arc(0, 0, 29 + Math.sin(timeElapsed * 4 + f.x * 0.02) * 2, 0, Math.PI * 2);
     ctx.stroke();
-    for (let mote = 0; mote < 3; mote++) {
-      const angle = timeElapsed * (1.8 + mote * 0.18) + mote * Math.PI * 2 / 3 + (f.id === "p2" ? 0.6 : 0);
-      const mx = Math.cos(angle) * 34;
-      const my = Math.sin(angle) * 17;
-      ctx.globalAlpha = 0.55 * auraPower;
-      ctx.fillStyle = mote === 0 ? "#ffffff" : auraColor;
-      ctx.beginPath();
-      ctx.arc(mx, my, mote === 0 ? 2.4 : 1.7, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    const moteAngle = timeElapsed * 2.2 + (f.id === "p2" ? 0.6 : 0);
+    ctx.globalAlpha = 0.42 * auraPower;
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(Math.cos(moteAngle) * 34, Math.sin(moteAngle) * 17, 2, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
 
     if (f.isChargingPulse) {
@@ -3284,11 +3261,8 @@ function drawPulsesAndParticles() {
     const eased = 1 - Math.pow(1 - progress, 3);
     const radius = 7 + (fx.maxRadius - 7) * eased;
     ctx.save();
-    ctx.globalCompositeOperation = "lighter";
     ctx.globalAlpha = Math.max(0, 1 - progress);
     ctx.strokeStyle = fx.color;
-    ctx.shadowColor = fx.color;
-    ctx.shadowBlur = 14;
     ctx.lineWidth = 4 * (1 - progress) + 1;
     ctx.beginPath();
     ctx.arc(fx.x, fx.y, radius, 0, Math.PI * 2);
@@ -3304,21 +3278,17 @@ function drawPulsesAndParticles() {
   for (const pl of pulses) {
     if (pl.trail && pl.trail.length > 1) {
       ctx.save();
-      ctx.globalCompositeOperation = "lighter";
+      ctx.globalAlpha = 0.24;
+      ctx.strokeStyle = pl.color || "#ffffff";
+      ctx.lineWidth = Math.max(1.5, Math.min(5, pl.radius * 0.32));
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
+      ctx.beginPath();
+      ctx.moveTo(pl.trail[0].x, pl.trail[0].y);
       for (let j = 1; j < pl.trail.length; j++) {
-        const strength = j / pl.trail.length;
-        ctx.globalAlpha = strength * 0.38;
-        ctx.strokeStyle = pl.color || "#ffffff";
-        ctx.lineWidth = Math.max(1, pl.radius * (0.12 + strength * 0.38));
-        ctx.shadowColor = pl.color || "#ffffff";
-        ctx.shadowBlur = 4 + 9 * strength;
-        ctx.beginPath();
-        ctx.moveTo(pl.trail[j - 1].x, pl.trail[j - 1].y);
         ctx.lineTo(pl.trail[j].x, pl.trail[j].y);
-        ctx.stroke();
       }
+      ctx.stroke();
       ctx.restore();
     }
     const lifeRatio = Math.max(0, pl.life / pl.maxLife);
@@ -3356,13 +3326,10 @@ function drawPulsesAndParticles() {
 
     } else if (pl.style === "bandage_fist") {
       ctx.rotate(angle);
-      ctx.shadowColor = "#ffd166";
-      ctx.shadowBlur = 12;
       ctx.font = '30px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText("🩹", 0, 0);
-      ctx.shadowBlur = 0;
 
     } else if (pl.style === "brain_spark") {
       ctx.rotate((pl.age || 0) * 22);
@@ -3799,48 +3766,40 @@ function drawPulsesAndParticles() {
     ctx.strokeStyle = "#0b0918";
     ctx.lineWidth = 5;
     ctx.lineJoin = "round";
-    ctx.shadowColor = fp.color;
-    ctx.shadowBlur = 10;
     ctx.strokeText(fp.text, 0, 0);
     ctx.fillStyle = fp.color;
     ctx.fillText(fp.text, 0, 0);
     ctx.restore();
   }
 
+  ctx.lineCap = "round";
   for (const pt of particles) {
     const fade = Math.max(0, pt.life / pt.maxLife);
-    ctx.save();
-    ctx.globalCompositeOperation = "lighter";
+    const size = pt.size;
     ctx.globalAlpha = fade;
-    ctx.translate(pt.x, pt.y);
-    ctx.rotate(pt.rotation || 0);
     ctx.fillStyle = pt.color;
     ctx.strokeStyle = pt.color;
-    ctx.shadowColor = pt.color;
-    ctx.shadowBlur = 5 + pt.size * 1.8;
     if (pt.shape === "circle") {
       ctx.beginPath();
-      ctx.arc(0, 0, pt.size * 0.48, 0, Math.PI * 2);
+      ctx.arc(pt.x, pt.y, size * 0.48, 0, Math.PI * 2);
       ctx.fill();
     } else if (pt.shape === "spark") {
-      ctx.lineWidth = Math.max(1, pt.size * 0.32);
-      ctx.lineCap = "round";
+      ctx.lineWidth = Math.max(1, size * 0.32);
       ctx.beginPath();
-      ctx.moveTo(-pt.size * 1.5, 0);
-      ctx.lineTo(pt.size * 1.5, 0);
-      ctx.moveTo(0, -pt.size * 0.7);
-      ctx.lineTo(0, pt.size * 0.7);
+      ctx.moveTo(pt.x - size * 1.5, pt.y);
+      ctx.lineTo(pt.x + size * 1.5, pt.y);
+      ctx.moveTo(pt.x, pt.y - size * 0.7);
+      ctx.lineTo(pt.x, pt.y + size * 0.7);
       ctx.stroke();
     } else {
       ctx.beginPath();
-      ctx.moveTo(0, -pt.size);
-      ctx.lineTo(pt.size * 0.62, 0);
-      ctx.lineTo(0, pt.size);
-      ctx.lineTo(-pt.size * 0.62, 0);
+      ctx.moveTo(pt.x, pt.y - size);
+      ctx.lineTo(pt.x + size * 0.62, pt.y);
+      ctx.lineTo(pt.x, pt.y + size);
+      ctx.lineTo(pt.x - size * 0.62, pt.y);
       ctx.closePath();
       ctx.fill();
     }
-    ctx.restore();
   }
   ctx.globalAlpha = 1;
 }
