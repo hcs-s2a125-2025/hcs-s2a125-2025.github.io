@@ -940,9 +940,9 @@ button.sub-btn:hover {
 }
 
 
-/* Eight-stage selection layout */
+/* Five-stage selection layout */
 .stage-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 9px;
   max-width: 920px;
 }
