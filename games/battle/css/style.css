@@ -925,3 +925,16 @@ button.sub-btn:hover {
     transform: none;
   }
 }
+
+
+/* PixiJS transparent GPU effects canvas above the original gameplay canvas. */
+.game-wrap > .pixi-effects-canvas {
+  position: absolute !important;
+  inset: 0;
+  z-index: 1 !important;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none !important;
+  cursor: default;
+}
