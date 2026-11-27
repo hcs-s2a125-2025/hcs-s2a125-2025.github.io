@@ -696,19 +696,7 @@ button.sub-btn:hover {
 }
 
 .game-wrap::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  opacity: 0.075;
-  background: repeating-linear-gradient(
-    to bottom,
-    transparent 0,
-    transparent 3px,
-    rgba(255, 255, 255, 0.34) 4px
-  );
-  mix-blend-mode: screen;
+  display: none;
 }
 
 canvas {
@@ -738,8 +726,7 @@ canvas {
 
 .p-hud,
 .stage-hud-pill {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  /* Avoid live backdrop filtering over the continuously rendered game canvas. */
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.10);
 }
 
@@ -761,8 +748,7 @@ canvas {
     radial-gradient(ellipse at 50% 0%, rgba(103, 67, 190, 0.20), transparent 56%),
     radial-gradient(ellipse at 0% 100%, rgba(30, 156, 165, 0.09), transparent 48%),
     rgba(8, 6, 22, 0.92);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  /* The panel is opaque enough without blurring the moving canvas underneath. */
 }
 
 .screen-title {
@@ -897,8 +883,7 @@ button.sub-btn:hover {
   background:
     radial-gradient(ellipse at 50% 42%, rgba(103, 67, 190, 0.25), transparent 55%),
     rgba(5, 4, 16, 0.88);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  /* Keep result transitions light on integrated GPUs. */
 }
 
 .result-overlay h2 {
