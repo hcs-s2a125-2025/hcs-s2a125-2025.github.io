@@ -2815,14 +2815,37 @@ function drawFighters() {
 
       const estLife =
         f.def.minPulseRangeLife +
-        (f.def.maxPulseRangeLife - f.def.minPulseRangeLife) * chargeRatio;
-      const estDist = Math.min(260, f.def.pulseSpeed * estLife * 0.45);
-      ctx.globalAlpha = 0.45;
+        (f.def.maxPulseRangeLife - f.def.minPulseRangeLife) * chargeRatio * (f.gear.pulseRangeMultiplier || 1);
+      const previewSpeed = f.def.pulseSpeed * (f.gear.pulseSpeedMultiplier || 1);
+      const previewVy = f.def.projectileStyle === "bounce_ball"
+        ? -320 - chargeRatio * 120
+        : f.def.projectileStyle === "poop_bomb"
+          ? -210 - chargeRatio * 95
+          : f.def.projectileStyle === "slime_drop"
+            ? -195 - chargeRatio * 75
+            : 0;
+      const previewVx = f.facing * previewSpeed;
+      const previewLength = Math.min(260, Math.hypot(previewVx, previewVy) * estLife * 0.45);
+      const previewAngle = Math.atan2(previewVy, previewVx);
+      const lineEndX = f.facing * 20 + Math.cos(previewAngle) * previewLength;
+      const lineEndY = Math.sin(previewAngle) * previewLength;
+      ctx.globalAlpha = 0.5;
       ctx.setLineDash([4, 4]);
       ctx.beginPath();
       ctx.moveTo(f.facing * 20, 0);
-      ctx.lineTo(f.facing * (20 + estDist), 0);
+      ctx.lineTo(lineEndX, lineEndY);
       ctx.stroke();
+      // Small arrowhead indicates the actual initial launch direction.
+      ctx.setLineDash([]);
+      ctx.translate(lineEndX, lineEndY);
+      ctx.rotate(previewAngle);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-8, -4);
+      ctx.lineTo(-8, 4);
+      ctx.closePath();
+      ctx.fillStyle = isMax ? "#ffd166" : f.accentColor;
+      ctx.fill();
       ctx.restore();
     }
 
