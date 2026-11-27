@@ -2623,6 +2623,7 @@ function update(dt) {
     }
   }
 
+  for (let i = hugTugEffects.length - 1; i >= 0; i--) { hugTugEffects[i].life -= dt; if (hugTugEffects[i].life <= 0) hugTugEffects.splice(i, 1); }
   if (screenMode === "battle" && fighters.length === 2 && countdownTimer <= 0 && hitStopTimer <= 0) {
     const stage = getCurrentStage();
     stepFighter(fighters[0], p1Input, dt, stage.platforms);
@@ -3154,6 +3155,7 @@ function update(dt) {
 
       for (const target of fighters) {
         if (target.id === sw.ownerId || sw.hitIds.has(target.id)) continue;
+        if (target.teddyGuardTimer > 0) { spawnParticles(target.x + target.w/2, target.y+target.h/2, 5, "#c58a55"); sw.hitIds.add(target.id); continue; }
         const tcx = target.x + target.w / 2;
         const tcy = target.y + target.h / 2;
         const dist = Math.hypot(sw.x - tcx, sw.y - tcy);
@@ -3865,6 +3867,12 @@ function drawPulsesAndParticles() {
     ctx.restore();
   }
 
+  for (const tug of hugTugEffects) {
+    ctx.save(); ctx.globalAlpha = tug.life / tug.maxLife; ctx.strokeStyle = "#ff82bd"; ctx.lineWidth = 9; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(tug.x1, tug.y1); ctx.quadraticCurveTo((tug.x1+tug.x2)/2, tug.y1-25, tug.x2, tug.y2); ctx.stroke();
+    ctx.font = '24px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif'; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("🫂", (tug.x1+tug.x2)/2, (tug.y1+tug.y2)/2-18); ctx.restore();
+  }
   for (const sw of shockwaves) {
     const lifeRatio = Math.max(0, sw.life / sw.maxLife);
     const alpha = Math.min(1, lifeRatio / 0.35);
