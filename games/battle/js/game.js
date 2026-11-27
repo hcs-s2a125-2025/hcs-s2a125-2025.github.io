@@ -2978,6 +2978,10 @@ function update(dt) {
       }
 
       if (pl.vy > 0 && pl.y >= GROUND_Y) {
+        if (pl.style === "teddy_friend" && (pl.teddyLanded || 0) < (pl.teddyBounces || 0)) {
+          pl.y = GROUND_Y - pl.radius; pl.teddyLanded = (pl.teddyLanded || 0) + 1;
+          pl.vy = -390; pl.vx += pl.dir * 95; spawnParticles(pl.x, GROUND_Y, 7, "#c58a55"); continue;
+        }
         if (pl.style === "bounce_ball" && (pl.groundBounces || 0) < 2) {
           pl.y = GROUND_Y - pl.radius;
           pl.vy = -Math.max(300, Math.abs(pl.vy) * 0.72);
@@ -2999,7 +3003,18 @@ function update(dt) {
             hitIds: new Set()
           });
           spawnParticles(pl.x, GROUND_Y, 10, "#b08968");
-        } else if (pl.style === "bounce_ball") {
+        } else if (pl.style === "teddy_friend") {
+      ctx.font = '28px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif'; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("🧸", 0, 0);
+    } else if (pl.style === "tear_drop") {
+      ctx.fillStyle = pl.color; ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(0, -pl.radius * 1.3); ctx.bezierCurveTo(pl.radius*1.2,-pl.radius*.4,pl.radius,pl.radius*.8,0,pl.radius); ctx.bezierCurveTo(-pl.radius,pl.radius*.8,-pl.radius*1.2,-pl.radius*.4,0,-pl.radius*1.3); ctx.fill(); ctx.stroke();
+    } else if (pl.style === "laser_bolt") {
+      ctx.strokeStyle = "#dff7ff"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-pl.radius*3,0); ctx.lineTo(pl.radius*3,0); ctx.stroke();
+      ctx.strokeStyle = pl.color; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(-pl.radius*2,0); ctx.lineTo(pl.radius*2,0); ctx.stroke();
+    } else if (pl.style === "monocle") {
+      ctx.strokeStyle = "#8bd3ff"; ctx.fillStyle = "rgba(139,211,255,0.35)"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0,0,pl.radius,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(pl.radius*.65,pl.radius*.65); ctx.lineTo(pl.radius*1.8,pl.radius*1.8); ctx.stroke();
+    } else if (pl.style === "bounce_ball") {
           spawnParticles(pl.x, GROUND_Y, 12, pl.color);
           spawnParticles(pl.x, GROUND_Y, 5, "#ffd166");
         } else if (pl.style === "mecha_missile") {
