@@ -247,13 +247,16 @@ function randomCharacter() {
 }
 
 function updateGearInfoUI() {
-  const update = (grid, info, selected) => {
+  const update = (grid, info, selected, selectedCharacter) => {
     Array.from(grid.children).forEach((btn) => btn.classList.toggle("active", btn.dataset.gear === (selected || "none")));
     const gear = selected ? EQUIPMENT_DEFS[selected] : null;
-    info.textContent = gear ? `${gear.emoji} ${gear.name}：${gear.desc}` : "装備なし：キャラクター本来の性能で戦う";
+    const jumpGearBlocked = !!(gear && gear.jumpBonus && CHARACTER_DEFS[selectedCharacter]?.noAirJump);
+    info.textContent = gear
+      ? `${gear.emoji} ${gear.name}：${gear.desc}${jumpGearBlocked ? '（🤕のパッシブにより空中ジャンプ効果は無効）' : ''`
+      : "装備なし：キャラクター本来の性能で戦う";
   };
-  update(p1GearGrid, p1GearInfo, selectedGearP1);
-  update(p2GearGrid, p2GearInfo, selectedGearP2);
+  update(p1GearGrid, p1GearInfo, selectedGearP1, selectedP1);
+  update(p2GearGrid, p2GearInfo, selectedGearP2, selectedP2);
 }
 
 function buildGearSelectUI() {
@@ -379,6 +382,11 @@ function openCharScreen() {
   charScreen.classList.remove("hidden");
 }
 
+function getJumpCapacity(def, gear) {
+  // 空中ジャンプ不可のパッシブは、ジャンプ装備より常に優先する
+  return def.noAirJump ? 1 : MAX_JUMPS + (gear.jumpBonus || 0);
+}
+
 function createFighter(id, label, emoji, gearEmoji, x, facing, accentColor) {
   const def = CHARACTER_DEFS[emoji];
   const gear = gearEmoji ? EQUIPMENT_DEFS[gearEmoji] : {};
@@ -400,7 +408,7 @@ function createFighter(id, label, emoji, gearEmoji, x, facing, accentColor) {
     hp: MAX_HP + (gear.maxHpBonus || 0),
     facing,
     onGround: true,
-    jumpsLeft: MAX_JUMPS + (gear.jumpBonus || 0),
+    jumpsLeft: getJumpCapacity(def, gear),
     invincibleTimer: 0,
     starTimer: 0,
     orbitTimer: 0,
@@ -1642,7 +1650,7 @@ function stepFighter(f, input, dt, platforms) {
           f.pendingSpecialCooldown = 0;
         }
       }
-      f.jumpsLeft = MAX_JUMPS + (f.gear.jumpBonus || 0) - 1;
+      f.jumpsLeft = getJumpCapacity(f.def, f.gear) - 1;
       f.squashX = 0.78;
       f.squashY = 1.25;
       spawnParticles(f.x + f.w / 2, f.y + f.h, 6, f.accentColor);
@@ -1738,7 +1746,7 @@ function stepFighter(f, input, dt, platforms) {
         }
         f.vy = 0;
         f.onGround = true;
-        f.jumpsLeft = MAX_JUMPS + (f.gear.jumpBonus || 0);
+        f.jumpsLeft = getJumpCapacity(f.def, f.gear);
         break;
       }
     }
@@ -2033,6 +2041,9 @@ function update(dt) {
       }
       if (pl.style === "brain_spark" && Math.random() < 0.55) {
         spawnParticles(pl.x, pl.y, 1, "#ff9f1c");
+      }
+      if (pl.style === "bandage_fist" && Math.random() < 0.65) {
+        spawnParticles(pl.x, pl.y, 1, "#fff1d0");
       }
       if (pl.style === "mystic_eye" && Math.random() < 0.45) {
         spawnParticles(pl.x, pl.y, 1, "#4cc9f0");
@@ -3005,6 +3016,16 @@ function drawPulsesAndParticles() {
       ctx.beginPath();
       ctx.ellipse(r * 0.4, -r * 0.15, r * 0.65, r * 0.35, 0, 0, Math.PI * 2);
       ctx.fill();
+
+    } else if (pl.style === "bandage_fist") {
+      ctx.rotate(angle);
+      ctx.shadowColor = "#ffd166";
+      ctx.shadowBlur = 12;
+      ctx.font = '30px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("🩹", 0, 0);
+      ctx.shadowBlur = 0;
 
     } else if (pl.style === "brain_spark") {
       ctx.rotate((pl.age || 0) * 22);
