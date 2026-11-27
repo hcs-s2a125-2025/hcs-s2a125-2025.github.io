@@ -532,6 +532,33 @@ const CHARACTER_DEFS = {
     knockbackScale: 1.12,
     shockwaveRadius: 0
   }
+
+  "🤕": {
+    emoji: "🤕",
+    abilityName: "🩹 バンデージ・ブレイクショット",
+    abilityDesc: "通常攻撃：大型の包帯弾で強烈に吹き飛ばす重量級攻撃 ／ パッシブ：空中ジャンプ不可",
+    specialName: "特殊：エマージェンシー・ガード",
+    specialDesc: "短時間バリアで敵の攻撃を防ぎ、一部の弾を反射（0.85秒・CT 5.8s）",
+    specialType: "barrier",
+    specialCooldown: 5.8,
+    barrierDuration: 0.85,
+    moveSpeed: 265,
+    jumpVel: -665,
+    doubleJumpVel: -600,
+    pulseSpeed: 490,
+    pulseRadius: 28,
+    minPulseRangeLife: 0.18,
+    maxPulseRangeLife: 0.48,
+    pulseCooldown: 0.62,
+    baseKnockVx: 610,
+    projectileStyle: "bandage_fist",
+    projectileColorOverride: "#ffd166",
+    invincibleDuration: 1.0,
+    knockbackScale: 1.0,
+    shockwaveRadius: 0,
+    impactBurstRadius: 70,
+    noAirJump: true,
+  },
 };
 
 const SELECTABLE_CHARACTERS = Object.keys(CHARACTER_DEFS).filter(
