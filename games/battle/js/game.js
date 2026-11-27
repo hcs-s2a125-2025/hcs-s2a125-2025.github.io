@@ -579,6 +579,7 @@ function updateHud() {
   const statusIcons = (f) => {
     let s = "";
     if (f.chillTimer > 0) s += "❄️";
+    if (f.slowTimer > 0) s += "🟢";
     if (f.starTimer > 0) s += "⭐";
     if (f.orbitTimer > 0) s += "🔥";
     return s;
@@ -733,6 +734,11 @@ function triggerPulse(fighter, chargeRatio = 0) {
   const projColor =
     fighter.def.projectileColorOverride ||
     (isBullet ? "#ffd166" : isBounceBall ? randomClownColor : fighter.accentColor);
+  const projectileLife = fighter.def.returningProjectile
+    ? rangeLife * 1.75
+    : isSlimeDrop
+      ? Math.max(rangeLife, 0.48)
+      : rangeLife;
 
   pulses.push({
     ownerId: fighter.id,
@@ -758,8 +764,8 @@ function triggerPulse(fighter, chargeRatio = 0) {
     slimePoolDuration: fighter.def.slimePoolDuration || 0,
     returningProjectile: !!fighter.def.returningProjectile,
     returnAt: rangeLife * 0.55,
-    life: fighter.def.returningProjectile ? rangeLife * 1.75 : rangeLife,
-    maxLife: fighter.def.returningProjectile ? rangeLife * 1.75 : rangeLife,
+    life: projectileLife,
+    maxLife: projectileLife,
     age: 0,
     color: projColor
   });
@@ -1582,7 +1588,7 @@ function stepFighter(f, input, dt, platforms) {
 
   if (f.dashStrikeTimer > 0) {
     f.dashStrikeTimer = Math.max(0, f.dashStrikeTimer - dt);
-    f.vx = f.facing * f.def.dashSpeed * chillSpeedFactor;
+    f.vx = f.facing * f.def.dashSpeed * chillSpeedFactor * slimeSpeedFactor;
     if (Math.random() < 0.7) {
       spawnParticles(f.x + f.w / 2, f.y + f.h / 2, 1, "#ffd166");
     }
@@ -1625,7 +1631,7 @@ function stepFighter(f, input, dt, platforms) {
 
   if (input.jumpPressed) {
     input.jumpPressed = false;
-    const chillJumpFactor = f.chillTimer > 0 ? 0.84 : 1.0;
+    const chillJumpFactor = (f.chillTimer > 0 ? 0.84 : 1.0) * (f.slowTimer > 0 ? 0.9 : 1.0);
     if (f.onGround) {
       f.vy = f.def.jumpVel * chillJumpFactor;
       f.onGround = false;
@@ -2062,7 +2068,7 @@ function update(dt) {
             if (pl.style !== "bounce_ball") pl.ricochets -= 1;
             pl.vx = -pl.vx;
             pl.dir = -pl.dir;
-            pl.x += Math.sign(pl.vx) * 6;
+            pl.x += Math.sign(pl.vx) * (hitR + 5);
             spawnParticles(pl.x, pl.y, 5, pl.color);
           } else {
             if (pl.style === "joker_card" && !pl.isSubCard) {
