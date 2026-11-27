@@ -1388,6 +1388,8 @@ function triggerPulse(fighter, chargeRatio = 0) {
     radius: fighter.def.pulseRadius * (fighter.gear.pulseRadiusMultiplier || 1),
     knockVx: (baseKnock + clampedRatio * 65) * (fighter.gear.knockbackMultiplier || 1),
     chillDuration: fighter.def.chillOnHit || 0,
+    pullOnHit: !!fighter.def.pullOnHit,
+    pullSpeed: fighter.def.pullSpeed || 0,
     homingStrength: fighter.def.homingStrength || 0,
     waveAmplitude: fighter.def.waveAmplitude || 0,
     waveFrequency: fighter.def.waveFrequency || 0,
@@ -1930,6 +1932,70 @@ function triggerSpecialAction(fighter) {
     }
     spawnParticles(cx + fighter.facing * 24, cy, 18, pColor);
     spawnParticles(cx + fighter.facing * 24, cy, 10, subGlow);
+  } else if (type === "deduction_pulse") {
+    fighter.specialCooldown = fighter.def.specialCooldown;
+    fighter.squashX = 1.22;
+    fighter.squashY = 0.82;
+    shockwaves.push({
+      ownerId: fighter.id,
+      x: cx,
+      y: cy,
+      maxRadius: 105,
+      radius: 12,
+      life: 0.32,
+      maxLife: 0.32,
+      color: "#8bd3ff",
+      knockVx: 270,
+      chillDuration: 1.1,
+      hitIds: new Set()
+    });
+    spawnPopup(cx, cy - 28, "🔎 CASE SOLVED!", "#8bd3ff");
+    spawnParticles(cx, cy, 24, "#8bd3ff");
+  } else if (type === "cry_burst") {
+    fighter.specialCooldown = fighter.def.specialCooldown;
+    fighter.squashX = 0.78;
+    fighter.squashY = 1.28;
+    shockwaves.push({
+      ownerId: fighter.id,
+      x: cx,
+      y: cy,
+      maxRadius: 100,
+      radius: 12,
+      life: 0.28,
+      maxLife: 0.28,
+      color: "#79caff",
+      knockVx: 510,
+      chillDuration: 1.4,
+      hitIds: new Set()
+    });
+    spawnPopup(cx, cy - 30, "😭 CRY BURST!", "#79caff");
+    spawnParticles(cx, cy, 28, "#79caff");
+    spawnParticles(cx, cy, 12, "#ffffff");
+  } else if (type === "hug_grab") {
+    fighter.specialCooldown = fighter.def.specialCooldown;
+    fighter.pulseTimer = PULSE_DURATION;
+    fighter.squashX = 1.38;
+    fighter.squashY = 0.72;
+    const target = fighters.find((other) => other.id !== fighter.id);
+    if (target) {
+      const tx = target.x + target.w / 2;
+      const ty = target.y + target.h / 2;
+      const dx = tx - cx;
+      const dy = ty - cy;
+      const range = fighter.def.hugRange || 108;
+      if (Math.abs(dx) <= range && Math.abs(dy) <= 82 && Math.sign(dx || fighter.facing) === fighter.facing) {
+        // Lunge into the hug and pull the target toward the caster. It deals exactly two hearts.
+        fighter.vx = fighter.facing * 360;
+        hitFighter(target, cx, 0, 0, fighter.def.hugDamage || 2, fighter.def.hugPullSpeed || 660);
+        if (screenMode !== "battle") return;
+        spawnPopup((cx + tx) / 2, (cy + ty) / 2 - 28, "🫂 HUG! -2", "#ff82bd");
+        spawnParticles((cx + tx) / 2, (cy + ty) / 2, 24, "#ff82bd");
+        spawnParticles((cx + tx) / 2, (cy + ty) / 2, 12, "#ffffff");
+      } else {
+        spawnPopup(cx, cy - 28, "🫂 TOO FAR!", "#ff82bd");
+        spawnParticles(cx, cy, 8, "#ff82bd");
+      }
+    }
   } else if (type === "mega_quake") {
     fighter.specialCooldown = fighter.def.specialCooldown;
     fighter.squashX = 1.28;
@@ -2072,9 +2138,9 @@ function triggerSpecialAction(fighter) {
   updateHud();
 }
 
-function hitFighter(target, attackerCenterX, baseKnockVx = 340, chillDuration = 0) {
+function hitFighter(target, attackerCenterX, baseKnockVx = 340, chillDuration = 0, damage = 1, pullSpeed = 0) {
   if (target.invincibleTimer > 0 || target.starTimer > 0 || screenMode !== "battle") return;
-  target.hp -= 1;
+  target.hp -= damage;
   if (target.bandageChangeTimer > 0) {
     target.bandageChangeTimer = 0;
     target.pendingSpecialCooldown = 0;
@@ -2086,7 +2152,7 @@ function hitFighter(target, attackerCenterX, baseKnockVx = 340, chillDuration = 
   hitStopTimer = Math.max(hitStopTimer, target.hp <= 0 ? 0.16 : 0.07);
   triggerScreenShake(0.14, target.hp <= 0 ? 9 : 4);
   Sound.sfx("hit");
-  spawnPopup(target.x + target.w / 2, target.y - 6, "-1", "#ff5c8a");
+  spawnPopup(target.x + target.w / 2, target.y - 6, `-${damage}`, "#ff5c8a");
   spawnImpactFlash(target.x + target.w / 2, target.y + target.h / 2, "#ff5c8a", 58, 0.24);
   if (chillDuration > 0) {
     target.chillTimer = Math.max(target.chillTimer, chillDuration);
@@ -2100,8 +2166,13 @@ function hitFighter(target, attackerCenterX, baseKnockVx = 340, chillDuration = 
     }
   }
   const pushDir = (target.x + target.w / 2) >= attackerCenterX ? 1 : -1;
-  target.vx = pushDir * baseKnockVx * target.def.knockbackScale * (target.gear.knockbackMultiplier || 1);
-  target.vy = -340;
+  if (pullSpeed > 0) {
+    target.vx = -pushDir * pullSpeed;
+    target.vy = -150;
+  } else {
+    target.vx = pushDir * baseKnockVx * target.def.knockbackScale * (target.gear.knockbackMultiplier || 1);
+    target.vy = -340;
+  }
   target.onGround = false;
   target.jumpsLeft = 0;
   target.squashX = 1.25;
@@ -2916,7 +2987,9 @@ function update(dt) {
             spawnParticles(pl.x, pl.y, 10, "#72efdd");
           } else {
             const impactKnockback = (pl.knockVx || 380) * (pl.impactBurstRadius > 0 ? 1.18 : 1);
-            hitFighter(target, pl.x, impactKnockback, pl.chillDuration || 0);
+            const owner = fighters.find((f) => f.id === pl.ownerId);
+            const pullTargetX = pl.pullOnHit && owner ? owner.x + owner.w / 2 : null;
+            hitFighter(target, pullTargetX ?? pl.x, impactKnockback, pl.chillDuration || 0, 1, pl.pullOnHit ? (pl.pullSpeed || 420) : 0);
             // finishMatch() clears attack arrays; do not append follow-up effects
             // or continue iterating the old projectile list after a KO.
             if (screenMode !== "battle") return;
