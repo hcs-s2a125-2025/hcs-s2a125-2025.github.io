@@ -2139,7 +2139,11 @@ function triggerSpecialAction(fighter) {
 }
 
 function hitFighter(target, attackerCenterX, baseKnockVx = 340, chillDuration = 0, damage = 1, pullSpeed = 0) {
-  if (target.invincibleTimer > 0 || target.starTimer > 0 || screenMode !== "battle") return;
+  if (screenMode !== "battle") return;
+  if (target.invincibleTimer > 0 || target.starTimer > 0) {
+    if (pullSpeed > 0) { const side = (target.x + target.w / 2) >= attackerCenterX ? 1 : -1; target.vx = -side * Math.min(300, pullSpeed * 0.46); target.vy = -80; target.onGround = false; spawnParticles(target.x + target.w / 2, target.y + target.h / 2, 5, "#ff82bd"); }
+    return;
+  }
   target.hp -= damage;
   if (target.bandageChangeTimer > 0) {
     target.bandageChangeTimer = 0;
