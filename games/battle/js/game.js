@@ -3112,7 +3112,12 @@ function update(dt) {
       if (Math.random() < 0.25) {
         spawnParticles(hz.x + (Math.random() - 0.5) * hz.radius * 1.6, hz.y - 4, 1, hz.color);
       }
-      if (hz.type === "mystic_orb") {
+      if (hz.type === "cry_field") {
+      ctx.fillStyle = "rgba(121,202,255,0.20)"; ctx.strokeStyle = "#79caff"; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.ellipse(hz.x, hz.y, hz.width/2, hz.height/2, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.font = '30px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif'; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("😭", hz.x, hz.y);
+      for (let n=0;n<5;n++) ctx.fillText("💧", hz.x-hz.width/2+((timeElapsed*48+n*55)%hz.width), hz.y+Math.sin(timeElapsed*4+n)*20);
+    } else if (hz.type === "mystic_orb") {
         for (let j = pulses.length - 1; j >= 0; j--) {
           const pl = pulses[j];
           if (pl.ownerId !== hz.ownerId && Math.hypot(pl.x - hz.x, pl.y - hz.y) <= hz.radius + pl.radius) {
@@ -3900,6 +3905,13 @@ function drawPulsesAndParticles() {
     ctx.beginPath(); ctx.moveTo(tug.x1, tug.y1); ctx.quadraticCurveTo((tug.x1+tug.x2)/2, tug.y1-25, tug.x2, tug.y2); ctx.stroke();
     ctx.font = '24px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif'; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.fillText("🫂", (tug.x1+tug.x2)/2, (tug.y1+tug.y2)/2-18); ctx.restore();
+  }
+  for (const fighter of fighters) {
+    if (fighter.teddyGuardTimer > 0) {
+      ctx.save(); ctx.globalAlpha = Math.min(1, fighter.teddyGuardTimer / 0.4);
+      ctx.font = '30px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif'; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText("🧸", fighter.x-20, fighter.y+fighter.h/2); ctx.fillText("🧸", fighter.x+fighter.w+20, fighter.y+fighter.h/2); ctx.restore();
+    }
   }
   for (const sw of shockwaves) {
     const lifeRatio = Math.max(0, sw.life / sw.maxLife);
