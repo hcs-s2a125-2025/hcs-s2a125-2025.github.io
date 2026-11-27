@@ -531,7 +531,7 @@ const CHARACTER_DEFS = {
     invincibleDuration: 0.95,
     knockbackScale: 1.12,
     shockwaveRadius: 0
-  }
+  },
 
   "🤕": {
     emoji: "🤕",
