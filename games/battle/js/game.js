@@ -1320,6 +1320,14 @@ function applyItemEffect(fighter, item) {
   updateHud();
 }
 
+function getChargedPulseRangeLife(def, chargeRatio, rangeMultiplier = 1) {
+  const ratio = Math.max(0, Math.min(1, chargeRatio));
+  const exponent = Math.max(1, def.pulseRangeChargeExponent || 1);
+  const scaledCharge = Math.pow(ratio, exponent);
+  return def.minPulseRangeLife +
+    (def.maxPulseRangeLife - def.minPulseRangeLife) * scaledCharge * rangeMultiplier;
+}
+
 function triggerPulse(fighter, chargeRatio = 0) {
   if (fighter.pulseCooldown > 0 || fighter.mindChargeTimer > 0) return;
   fighter.pulseTimer = PULSE_DURATION;
@@ -1342,9 +1350,11 @@ function triggerPulse(fighter, chargeRatio = 0) {
   const cx = fighter.x + fighter.w / 2;
   const cy = fighter.y + fighter.h / 2;
   const clampedRatio = Math.max(0, Math.min(1, chargeRatio));
-  const rangeLife =
-    fighter.def.minPulseRangeLife +
-    (fighter.def.maxPulseRangeLife - fighter.def.minPulseRangeLife) * clampedRatio * (fighter.gear.pulseRangeMultiplier || 1);
+  const rangeLife = getChargedPulseRangeLife(
+    fighter.def,
+    clampedRatio,
+    fighter.gear.pulseRangeMultiplier || 1
+  );
 
   const style = fighter.def.projectileStyle || "mega_wave";
   const isBullet = style === "bullet";
@@ -1930,13 +1940,15 @@ function triggerSpecialAction(fighter) {
       y: cy,
       maxRadius: fighter.def.megaQuakeRadius,
       radius: 14,
-      life: 0.26,
-      maxLife: 0.26,
-      color: "#ffd166",
-      knockVx: 500,
+      life: 0.34,
+      maxLife: 0.34,
+      color: "#72efdd",
+      knockVx: 470,
+      chillDuration: fighter.def.megaQuakeChillDuration || 1.25,
       hitIds: new Set()
     });
-    spawnParticles(cx, cy, 18, "#ffd166");
+    spawnParticles(cx, cy, 18, "#72efdd");
+    spawnPopup(cx, cy - 30, "🌐 GROUND QUAKE!", "#72efdd");
   } else if (type === "long_snipe") {
     fighter.specialCooldown = fighter.def.specialCooldown;
     fighter.pulseTimer = PULSE_DURATION;
@@ -3591,9 +3603,11 @@ function drawFighters() {
       ctx.arc(0, 0, 26, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * chargeRatio);
       ctx.stroke();
 
-      const estLife =
-        f.def.minPulseRangeLife +
-        (f.def.maxPulseRangeLife - f.def.minPulseRangeLife) * chargeRatio * (f.gear.pulseRangeMultiplier || 1);
+      const estLife = getChargedPulseRangeLife(
+        f.def,
+        chargeRatio,
+        f.gear.pulseRangeMultiplier || 1
+      );
       const previewSpeed = f.def.pulseSpeed * (f.gear.pulseSpeedMultiplier || 1);
       const previewVy = f.def.projectileStyle === "bounce_ball"
         ? -320 - chargeRatio * 120
