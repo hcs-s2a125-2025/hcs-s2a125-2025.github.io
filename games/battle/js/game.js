@@ -555,6 +555,8 @@ function setPaused(v) {
 }
 
 function finishMatch(winner, reason) {
+  // A match can only finish once. Ignore secondary hits in the same frame.
+  if (screenMode !== "battle") return;
   screenMode = "result";
   koTimer = reason === "time" ? 0.7 : 1.15;
   resultBannerText = reason === "time" ? "TIME UP!" : "K.O.!";
@@ -2043,6 +2045,7 @@ function update(dt) {
       const ocy = opponent.y + opponent.h / 2;
       if (Math.hypot(fcx - ocx, fcy - ocy) <= 68) {
         hitFighter(opponent, fcx, 440);
+        if (screenMode !== "battle") return;
         f.orbitHitCooldown = 0.65;
         spawnParticles(ocx, ocy, 14, "#ff9f1c");
       }
@@ -2404,6 +2407,9 @@ function update(dt) {
           } else {
             const impactKnockback = (pl.knockVx || 380) * (pl.impactBurstRadius > 0 ? 1.18 : 1);
             hitFighter(target, pl.x, impactKnockback, pl.chillDuration || 0);
+            // finishMatch() clears attack arrays; do not append follow-up effects
+            // or continue iterating the old projectile list after a KO.
+            if (screenMode !== "battle") return;
             if (pl.impactBurstRadius > 0 || pl.slimePoolDuration > 0) {
               spawnProjectileImpact(pl, pl.x, pl.y, target.id);
             }
@@ -2484,6 +2490,7 @@ function update(dt) {
           if (Math.hypot(tcx - hz.x, tcy - hz.y) <= hz.radius + target.w * 0.45) {
             hz.hitIds.add(target.id);
             hitFighter(target, hz.x, 450);
+            if (screenMode !== "battle") return;
             spawnParticles(hz.x, hz.y, 14, "#4cc9f0");
           }
         }
@@ -2506,6 +2513,7 @@ function update(dt) {
           const tbottom = target.y + target.h;
           if (Math.abs(tcx - hz.x) <= hz.radius && Math.abs(tbottom - hz.y) <= 26) {
             hitFighter(target, hz.x, 380);
+            if (screenMode !== "battle") return;
           }
         }
       }
@@ -2527,6 +2535,7 @@ function update(dt) {
         const dist = Math.hypot(sw.x - tcx, sw.y - tcy);
         if (dist <= sw.radius + target.w * 0.55) {
           hitFighter(target, sw.x, sw.knockVx || 420, sw.chillDuration || 0);
+          if (screenMode !== "battle") return;
           sw.hitIds.add(target.id);
         }
       }
@@ -2544,9 +2553,11 @@ function update(dt) {
       if (f1.dashStrikeTimer > 0 && !f1.dashStrikeHitIds.has(f2.id)) {
         f1.dashStrikeHitIds.add(f2.id);
         hitFighter(f2, f1.x + f1.w / 2, 500);
+        if (screenMode !== "battle") return;
       } else if (f2.dashStrikeTimer > 0 && !f2.dashStrikeHitIds.has(f1.id)) {
         f2.dashStrikeHitIds.add(f1.id);
         hitFighter(f1, f2.x + f2.w / 2, 500);
+        if (screenMode !== "battle") return;
       } else {
         const f1Center = f1.x + f1.w / 2;
         const f2Center = f2.x + f2.w / 2;
