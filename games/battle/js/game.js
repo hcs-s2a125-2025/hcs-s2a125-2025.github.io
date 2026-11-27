@@ -571,6 +571,8 @@ function formatSpBadge(f, keyHint) {
     if (f.hp >= f.maxHp) return `<span class="sp-badge">${keyHint} HP満タン</span>`;
     if (!f.onGround) return `<span class="sp-badge">${keyHint} 着地して使用</span>`;
     if (f.specialCooldown <= 0) return `<span class="sp-badge">${keyHint} 🩹交換OK 残${remaining}回</span>`;
+    const pct = Math.max(0, Math.min(100, (1 - f.specialCooldown / (f.def.specialCooldown || 1)) * 100));
+    return `<span class="sp-badge cd" style="--p:${pct.toFixed(0)}%">${keyHint} 🩹CT ${f.specialCooldown.toFixed(1)}s 残${remaining}回</span>`;
   }
   if (f.mindChargeTimer > 0) {
     return `<span class="sp-badge active">${keyHint} 💥臨界チャージ中!</span>`;
@@ -1676,6 +1678,21 @@ function stepFighter(f, input, dt, platforms) {
   if (input.specialPressed || (autoSpecialAllowed && f.specialCooldown <= 0 && !isSpecialActive(f))) {
     input.specialPressed = false;
     triggerSpecialAction(f);
+  }
+
+  // 発動したフレームも移動・ジャンプ・通常攻撃を通さない
+  if (f.bandageChangeTimer > 0) {
+    f.vx = 0;
+    f.vy = 0;
+    f.onGround = true;
+    input.jumpPressed = false;
+    input.pulseHeld = false;
+    input.pulseReleased = false;
+    input.specialPressed = false;
+    f.isChargingPulse = false;
+    f.pulseChargeTime = 0;
+    updateHud();
+    return;
   }
 
   const chillSpeedFactor = f.chillTimer > 0 ? 0.48 : 1.0;
