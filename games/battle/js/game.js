@@ -419,6 +419,7 @@ function createFighter(id, label, emoji, gearEmoji, x, facing, accentColor) {
     barrierTimer: 0,
     stealthTimer: 0,
     chillTimer: 0,
+    slowTimer: 0,
     warpBeacon: null,
     atlasPin: null,
     squashX: 1,
@@ -724,6 +725,7 @@ function triggerPulse(fighter, chargeRatio = 0) {
   const isBullet = style === "bullet";
   const isBounceBall = style === "bounce_ball";
   const isPoopBomb = style === "poop_bomb";
+  const isSlimeDrop = style === "slime_drop";
   const baseKnock = fighter.def.baseKnockVx || 380;
 
   const clownColors = ["#ff5c8a", "#ffd166", "#72efdd", "#c77dff"];
@@ -737,18 +739,27 @@ function triggerPulse(fighter, chargeRatio = 0) {
     playerColor: fighter.accentColor,
     style,
     x: cx + fighter.facing * (isBullet ? 20 : 22),
-    y: cy,
-    baseY: cy,
+    y: fighter.def.groundWave ? GROUND_Y - 10 : cy,
+    baseY: fighter.def.groundWave ? GROUND_Y - 10 : cy,
     vx: fighter.facing * fighter.def.pulseSpeed * (fighter.gear.pulseSpeedMultiplier || 1),
-    vy: isBounceBall ? -320 - clampedRatio * 120 : isPoopBomb ? -210 - clampedRatio * 95 : 0,
-    gravity: isBounceBall ? 1350 : isPoopBomb ? 980 : 0,
+    vy: isBounceBall ? -320 - clampedRatio * 120 : isPoopBomb ? -210 - clampedRatio * 95 : isSlimeDrop ? -195 - clampedRatio * 75 : 0,
+    gravity: isBounceBall ? 1350 : isPoopBomb ? 980 : isSlimeDrop ? 1050 : 0,
     dir: fighter.facing,
     radius: fighter.def.pulseRadius * (fighter.gear.pulseRadiusMultiplier || 1),
     knockVx: (baseKnock + clampedRatio * 65) * (fighter.gear.knockbackMultiplier || 1),
     chillDuration: fighter.def.chillOnHit || 0,
     homingStrength: fighter.def.homingStrength || 0,
-    life: rangeLife,
-    maxLife: rangeLife,
+    waveAmplitude: fighter.def.waveAmplitude || 0,
+    waveFrequency: fighter.def.waveFrequency || 0,
+    groundWave: !!fighter.def.groundWave,
+    phaseWalls: !!fighter.def.phaseWalls,
+    ricochets: fighter.def.ricochetCount || 0,
+    impactBurstRadius: fighter.def.impactBurstRadius || 0,
+    slimePoolDuration: fighter.def.slimePoolDuration || 0,
+    returningProjectile: !!fighter.def.returningProjectile,
+    returnAt: rangeLife * 0.55,
+    life: fighter.def.returningProjectile ? rangeLife * 1.75 : rangeLife,
+    maxLife: fighter.def.returningProjectile ? rangeLife * 1.75 : rangeLife,
     age: 0,
     color: projColor
   });
@@ -776,6 +787,41 @@ function triggerPulse(fighter, chargeRatio = 0) {
       color: "#ffd166", knockVx: 220, hitIds: new Set()
     });
     spawnParticles(cx + fighter.facing * 18, cy, 10, "#ffd166");
+  }
+}
+
+function createSlimePool(pl, x, y) {
+  hazardZones.push({
+    ownerId: pl.ownerId,
+    type: "slime_pool",
+    x: Math.max(34, Math.min(VIEW_WIDTH - 34, x)),
+    y: Math.min(GROUND_Y, y),
+    radius: 46,
+    life: pl.slimePoolDuration || 1.45,
+    maxLife: pl.slimePoolDuration || 1.45,
+    color: "#8dff7a"
+  });
+  spawnParticles(x, y - 3, 12, "#8dff7a");
+}
+
+function spawnProjectileImpact(pl, x, y, hitTargetId = null) {
+  if (pl.impactBurstRadius > 0) {
+    shockwaves.push({
+      ownerId: pl.ownerId,
+      x,
+      y,
+      maxRadius: pl.impactBurstRadius,
+      radius: 9,
+      life: 0.24,
+      maxLife: 0.24,
+      color: pl.color || "#ff9f1c",
+      knockVx: Math.max(360, (pl.knockVx || 380) * 0.85),
+      hitIds: hitTargetId ? new Set([hitTargetId]) : new Set()
+    });
+    spawnParticles(x, y, 16, pl.color || "#ff9f1c");
+  }
+  if (pl.slimePoolDuration > 0) {
+    createSlimePool(pl, x, GROUND_Y);
   }
 }
 
@@ -1417,6 +1463,9 @@ function stepFighter(f, input, dt, platforms) {
       spawnParticles(f.x + f.w / 2, f.y + f.h / 2, 1, "#70e4ff");
     }
   }
+  if (f.slowTimer > 0) {
+    f.slowTimer = Math.max(0, f.slowTimer - dt);
+  }
 
   if (f.mindChargeTimer > 0) {
     f.mindChargeTimer = Math.max(0, f.mindChargeTimer - dt);
@@ -1529,6 +1578,7 @@ function stepFighter(f, input, dt, platforms) {
   }
 
   const chillSpeedFactor = f.chillTimer > 0 ? 0.48 : 1.0;
+  const slimeSpeedFactor = f.slowTimer > 0 ? 0.66 : 1.0;
 
   if (f.dashStrikeTimer > 0) {
     f.dashStrikeTimer = Math.max(0, f.dashStrikeTimer - dt);
@@ -1544,7 +1594,7 @@ function stepFighter(f, input, dt, platforms) {
     const moveDir = (input.right ? 1 : 0) - (input.left ? 1 : 0);
     const chargeSlow = f.mindChargeTimer > 0 ? 0.35 : 1.0;
     const starBonus = f.starTimer > 0 ? 1.24 : 1.0;
-    const speedBonus = (f.stealthTimer > 0 ? 1.25 : 1.0) * chillSpeedFactor * chargeSlow * starBonus;
+    const speedBonus = (f.stealthTimer > 0 ? 1.25 : 1.0) * chillSpeedFactor * slimeSpeedFactor * chargeSlow * starBonus;
     if (moveDir !== 0) {
       f.facing = moveDir;
       const accel = f.onGround ? 2400 : 1500;
@@ -1905,6 +1955,27 @@ function update(dt) {
     for (let i = pulses.length - 1; i >= 0; i--) {
       const pl = pulses[i];
       pl.age = (pl.age || 0) + dt;
+      if (pl.returningProjectile && pl.age >= pl.returnAt) {
+        const owner = fighters.find((f) => f.id === pl.ownerId);
+        if (owner) {
+          const ox = owner.x + owner.w / 2;
+          const oy = owner.y + owner.h / 2;
+          const dx = ox - pl.x;
+          const dy = oy - pl.y;
+          const distance = Math.hypot(dx, dy);
+          if (distance < 30) {
+            pulses.splice(i, 1);
+            continue;
+          }
+          const speed = Math.max(420, Math.hypot(pl.vx, pl.vy || 0));
+          const angle = Math.atan2(dy, dx);
+          pl.vx = Math.cos(angle) * speed;
+          pl.vy = Math.sin(angle) * speed;
+          pl.dir = pl.vx >= 0 ? 1 : -1;
+          pl.phaseWalls = true;
+          pl.returning = true;
+        }
+      }
       if (pl.homingStrength > 0) {
         const target = fighters.find((f) => f.id !== pl.ownerId);
         if (target && target.stealthTimer <= 0 && target.hp > 0) {
@@ -1934,6 +2005,10 @@ function update(dt) {
 
       if (pl.style === "zigzag_spring") {
         pl.y = pl.baseY + Math.sin(pl.age * 28) * 18;
+      } else if (pl.waveAmplitude > 0) {
+        pl.y = pl.baseY + Math.sin(pl.age * (pl.waveFrequency || 7)) * pl.waveAmplitude;
+      } else if (pl.groundWave) {
+        pl.y = GROUND_Y - 10;
       } else {
         pl.y += (pl.vy || 0) * dt;
       }
@@ -1975,7 +2050,7 @@ function update(dt) {
 
       let hitWall = false;
       for (const p of stage.platforms) {
-        if (p.type !== "wall") continue;
+        if (p.type !== "wall" || pl.phaseWalls) continue;
         const hitR = Math.min(10, pl.radius * 0.55);
         if (
           pl.x + hitR >= p.x &&
@@ -1983,7 +2058,8 @@ function update(dt) {
           pl.y + hitR >= p.y &&
           pl.y - hitR <= p.y + p.h
         ) {
-          if (pl.style === "bounce_ball") {
+          if (pl.style === "bounce_ball" || pl.ricochets > 0) {
+            if (pl.style !== "bounce_ball") pl.ricochets -= 1;
             pl.vx = -pl.vx;
             pl.dir = -pl.dir;
             pl.x += Math.sign(pl.vx) * 6;
@@ -2008,6 +2084,9 @@ function update(dt) {
             } else {
               spawnParticles(pl.x, pl.y, 6, pl.color);
             }
+            if (pl.impactBurstRadius > 0 || pl.slimePoolDuration > 0) {
+              spawnProjectileImpact(pl, pl.x, pl.y);
+            }
             hitWall = true;
           }
           break;
@@ -2031,6 +2110,13 @@ function update(dt) {
       }
 
       if (pl.vy > 0 && pl.y >= GROUND_Y) {
+        if (pl.style === "bounce_ball" && (pl.groundBounces || 0) < 2) {
+          pl.y = GROUND_Y - pl.radius;
+          pl.vy = -Math.max(300, Math.abs(pl.vy) * 0.72);
+          pl.groundBounces = (pl.groundBounces || 0) + 1;
+          spawnParticles(pl.x, GROUND_Y, 9, pl.color);
+          continue;
+        }
         if (pl.style === "poop_bomb") {
           shockwaves.push({
             ownerId: pl.ownerId,
@@ -2053,6 +2139,9 @@ function update(dt) {
           spawnParticles(pl.x, GROUND_Y, 6, "#ff5c8a");
         } else {
           spawnParticles(pl.x, GROUND_Y, 6, pl.color);
+        }
+        if (pl.impactBurstRadius > 0 || pl.slimePoolDuration > 0) {
+          spawnProjectileImpact(pl, pl.x, GROUND_Y - 4);
         }
         pulses.splice(i, 1);
         continue;
@@ -2082,6 +2171,9 @@ function update(dt) {
             spawnParticles(pl.x, pl.y, 10, "#72efdd");
           } else {
             hitFighter(target, pl.x, pl.knockVx || 380, pl.chillDuration || 0);
+            if (pl.impactBurstRadius > 0 || pl.slimePoolDuration > 0) {
+              spawnProjectileImpact(pl, pl.x, pl.y, target.id);
+            }
             if (pl.style === "joker_card" && !pl.isSubCard) {
               triggerJokerBurst(pl.ownerId, pl.playerColor, pl.x, pl.y, pl.dir);
             } else if (pl.style === "poop_bomb") {
@@ -2160,6 +2252,18 @@ function update(dt) {
             hz.hitIds.add(target.id);
             hitFighter(target, hz.x, 450);
             spawnParticles(hz.x, hz.y, 14, "#4cc9f0");
+          }
+        }
+      } else if (hz.type === "slime_pool") {
+        for (const target of fighters) {
+          if (target.id === hz.ownerId || target.hp <= 0) continue;
+          const tcx = target.x + target.w / 2;
+          const tbottom = target.y + target.h;
+          if (Math.abs(tcx - hz.x) <= hz.radius && tbottom >= hz.y - 16 && tbottom <= hz.y + 34) {
+            target.slowTimer = Math.max(target.slowTimer || 0, 0.2);
+            if (Math.random() < 0.16) {
+              spawnParticles(tcx, hz.y - 5, 1, hz.color);
+            }
           }
         }
       } else {
@@ -2814,7 +2918,7 @@ function drawPulsesAndParticles() {
       ctx.textBaseline = "middle";
       ctx.fillText("🪬", hz.x, hz.y);
     } else {
-      ctx.fillStyle = "rgba(255, 209, 102, 0.28)";
+      ctx.fillStyle = hz.type === "slime_pool" ? "rgba(141, 255, 122, 0.24)" : "rgba(255, 209, 102, 0.28)";
       ctx.strokeStyle = hz.color;
       ctx.lineWidth = 2.5;
       ctx.beginPath();
@@ -3141,7 +3245,7 @@ function drawPulsesAndParticles() {
     } else if (pl.style === "slime_drop") {
       ctx.rotate(angle);
       const r = pl.radius * 0.75;
-      ctx.fillStyle = "#ffd166";
+      ctx.fillStyle = "#8dff7a";
       ctx.beginPath();
       ctx.moveTo(r * 1.2, 0);
       ctx.quadraticCurveTo(0, -r * 1.1, -r * 1.3, -r * 0.35);
