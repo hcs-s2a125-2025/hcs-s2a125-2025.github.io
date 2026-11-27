@@ -428,6 +428,8 @@ function createFighter(id, label, emoji, gearEmoji, x, facing, accentColor) {
     stealthTimer: 0,
     chillTimer: 0,
     slowTimer: 0,
+    bandageChangeTimer: 0,
+    bandageChangesUsed: 0,
     warpBeacon: null,
     atlasPin: null,
     squashX: 1,
@@ -507,6 +509,7 @@ function finishMatch(winner, reason) {
     f.orbitTimer = 0;
     f.stealthTimer = 0;
     f.barrierTimer = 0;
+    f.bandageChangeTimer = 0;
     f.mindChargeTimer = 0;
     f.dashStrikeTimer = 0;
     f.meteorSlamActive = false;
@@ -549,6 +552,7 @@ function showResultOverlay() {
 
 function isSpecialActive(f) {
   return (
+    f.bandageChangeTimer > 0 ||
     f.barrierTimer > 0 ||
     f.stealthTimer > 0 ||
     f.dashStrikeTimer > 0 ||
@@ -558,6 +562,16 @@ function isSpecialActive(f) {
 }
 
 function formatSpBadge(f, keyHint) {
+  if (f.def.specialType === "bandage_change") {
+    const remaining = Math.max(0, (f.def.bandageChangeLimit || 2) - (f.bandageChangesUsed || 0));
+    if (f.bandageChangeTimer > 0) {
+      return `<span class="sp-badge active">${keyHint} 🩹包帯交換中 ${f.bandageChangeTimer.toFixed(1)}s</span>`;
+    }
+    if (remaining <= 0) return `<span class="sp-badge cd">${keyHint} 包帯交換 残0回</span>`;
+    if (f.hp >= f.maxHp) return `<span class="sp-badge">${keyHint} HP満タン</span>`;
+    if (!f.onGround) return `<span class="sp-badge">${keyHint} 着地して使用</span>`;
+    if (f.specialCooldown <= 0) return `<span class="sp-badge">${keyHint} 🩹交換OK 残${remaining}回</span>`;
+  }
   if (f.mindChargeTimer > 0) {
     return `<span class="sp-badge active">${keyHint} 💥臨界チャージ中!</span>`;
   }
@@ -935,7 +949,36 @@ function triggerSpecialAction(fighter) {
   const cy = fighter.y + fighter.h / 2;
   Sound.sfx("special");
 
-  if (type === "mind_explosion") {
+  if (type === "bandage_change") {
+    const limit = fighter.def.bandageChangeLimit || 2;
+    if ((fighter.bandageChangesUsed || 0) >= limit) {
+      spawnPopup(cx, cy - 28, "🩹 包帯はもう残っていない！", "#ff5c8a");
+      return;
+    }
+    if (!fighter.onGround) {
+      spawnPopup(cx, cy - 28, "🩹 地上で包帯交換してね", "#ffd166");
+      return;
+    }
+    if (fighter.hp >= fighter.maxHp) {
+      spawnPopup(cx, cy - 28, "🩹 HPは満タン！", "#72efdd");
+      return;
+    }
+
+    fighter.bandageChangesUsed = (fighter.bandageChangesUsed || 0) + 1;
+    fighter.bandageChangeTimer = fighter.def.bandageChangeDuration || 2.4;
+    fighter.pendingSpecialCooldown = fighter.def.specialCooldown;
+    fighter.vx = 0;
+    fighter.vy = 0;
+    fighter.onGround = true;
+    fighter.isChargingPulse = false;
+    fighter.pulseChargeTime = 0;
+    fighter.squashX = 0.88;
+    fighter.squashY = 1.12;
+    spawnPopup(cx, cy - 30, "🩹 包帯交換開始！", "#ffd166");
+    spawnParticles(cx, cy, 14, "#fff1d0");
+    updateHud();
+    return;
+  } else if (type === "mind_explosion") {
     fighter.pendingSpecialCooldown = fighter.def.specialCooldown;
     fighter.mindChargeMax = fighter.def.chargeDuration || 0.45;
     fighter.mindChargeTimer = fighter.mindChargeMax;
@@ -1416,6 +1459,13 @@ function triggerSpecialAction(fighter) {
 function hitFighter(target, attackerCenterX, baseKnockVx = 340, chillDuration = 0) {
   if (target.invincibleTimer > 0 || target.starTimer > 0 || screenMode !== "battle") return;
   target.hp -= 1;
+  if (target.bandageChangeTimer > 0) {
+    target.bandageChangeTimer = 0;
+    target.pendingSpecialCooldown = 0;
+    target.specialCooldown = target.def.specialCooldown;
+    spawnPopup(target.x + target.w / 2, target.y - 30, "🩹 包帯交換中断！", "#ff5c8a");
+    spawnParticles(target.x + target.w / 2, target.y + target.h / 2, 12, "#ff5c8a");
+  }
   target.invincibleTimer = target.def.invincibleDuration;
   hitStopTimer = Math.max(hitStopTimer, target.hp <= 0 ? 0.16 : 0.07);
   triggerScreenShake(0.14, target.hp <= 0 ? 9 : 4);
@@ -1479,6 +1529,42 @@ function stepFighter(f, input, dt, platforms) {
   }
   if (f.slowTimer > 0) {
     f.slowTimer = Math.max(0, f.slowTimer - dt);
+  }
+
+  // 包帯交換中はその場から動けず、攻撃・ジャンプもできない
+  if (f.bandageChangeTimer > 0) {
+    f.bandageChangeTimer = Math.max(0, f.bandageChangeTimer - dt);
+    f.vx = 0;
+    f.vy = 0;
+    f.onGround = true;
+    input.jumpPressed = false;
+    input.pulseHeld = false;
+    input.pulseReleased = false;
+    input.specialPressed = false;
+    f.isChargingPulse = false;
+    f.pulseChargeTime = 0;
+
+    if (Math.random() < 0.45) {
+      spawnParticles(f.x + f.w / 2, f.y + f.h / 2, 1, "#fff1d0");
+    }
+    if (f.bandageChangeTimer <= 0) {
+      f.pendingSpecialCooldown = 0;
+      f.specialCooldown = f.def.specialCooldown;
+      if (f.hp < f.maxHp) {
+        f.hp = Math.min(f.maxHp, f.hp + 1);
+        spawnPopup(f.x + f.w / 2, f.y - 30, "🩹 HP +1！", "#72efdd");
+        spawnParticles(f.x + f.w / 2, f.y + f.h / 2, 22, "#fff1d0");
+        Sound.sfx("item");
+      } else {
+        spawnPopup(f.x + f.w / 2, f.y - 30, "🩹 交換完了！", "#ffd166");
+      }
+      f.squashX = 1.2;
+      f.squashY = 0.82;
+      updateHud();
+    } else {
+      updateHud();
+    }
+    return;
   }
 
   if (f.mindChargeTimer > 0) {
@@ -1586,7 +1672,8 @@ function stepFighter(f, input, dt, platforms) {
   }
 
   // 特殊技の発動（手動ボタン または フルオート攻撃時かつクールタイム完了）
-  if (input.specialPressed || (assist.fullAuto && f.specialCooldown <= 0 && !isSpecialActive(f))) {
+  const autoSpecialAllowed = assist.fullAuto && f.def.specialType !== "bandage_change";
+  if (input.specialPressed || (autoSpecialAllowed && f.specialCooldown <= 0 && !isSpecialActive(f))) {
     input.specialPressed = false;
     triggerSpecialAction(f);
   }
@@ -2736,6 +2823,21 @@ function drawFighters() {
         ctx.arc(ox, oy, 4.5, 0, Math.PI * 2);
         ctx.fill();
       }
+      ctx.restore();
+    }
+
+    if (f.bandageChangeTimer > 0) {
+      const ratio = 1 - f.bandageChangeTimer / (f.def.bandageChangeDuration || 2.4);
+      ctx.save();
+      ctx.strokeStyle = "#ffd166";
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, 30, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * ratio);
+      ctx.stroke();
+      ctx.font = '22px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("🩹", 0, -34);
       ctx.restore();
     }
 
