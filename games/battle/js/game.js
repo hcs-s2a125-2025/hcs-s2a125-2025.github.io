@@ -3024,6 +3024,9 @@ function update(dt) {
             pl.playerColor = target.accentColor;
             spawnParticles(pl.x, pl.y, 10, "#72efdd");
           } else {
+            const tearShield = hazardZones.some((z) => z.type === "cry_field" && z.ownerId !== pl.ownerId && z.life > 0 && Math.abs(pl.x-z.x) <= z.width/2 && Math.abs(pl.y-z.y) <= z.height/2);
+            if (tearShield) { spawnParticles(pl.x, pl.y, 5, "#79caff"); pl.life = 0; continue; }
+            if (target.teddyGuardTimer > 0) { spawnParticles(pl.x, pl.y, 7, "#c58a55"); pl.life = 0; continue; }
             const impactKnockback = (pl.knockVx || 380) * (pl.impactBurstRadius > 0 ? 1.18 : 1);
             const owner = fighters.find((f) => f.id === pl.ownerId);
             const pullTargetX = pl.pullOnHit && owner ? owner.x + owner.w / 2 : null;
