@@ -590,8 +590,8 @@ function updateHud() {
   };
   const hearts = (f) => `<span class="hp-hearts">${"♥".repeat(Math.max(0, f.hp))}${"♡".repeat(Math.max(0, f.maxHp - f.hp))}</span>`;
   const wins = (n) => (n > 0 ? `<span class="wins">🏆${n}</span>` : "");
-  p1Hud.innerHTML = `1P ${f1.emoji}${statusIcons(f1)} ${hearts(f1)} ${formatSpBadge(f1, "Q")} ${assistBadge("p1")} ${wins(scores.p1)}`;
-  p2Hud.innerHTML = `${wins(scores.p2)} ${assistBadge("p2")} 2P ${f2.emoji}${statusIcons(f2)} ${hearts(f2)} ${formatSpBadge(f2, "左Click")}`;
+  p1Hud.innerHTML = `1P ${f1.emoji}${f1.gearEmoji || ""}${statusIcons(f1)} ${hearts(f1)} ${formatSpBadge(f1, "Q")} ${assistBadge("p1")} ${wins(scores.p1)}`;
+  p2Hud.innerHTML = `${wins(scores.p2)} ${assistBadge("p2")} 2P ${f2.emoji}${f2.gearEmoji || ""}${statusIcons(f2)} ${hearts(f2)} ${formatSpBadge(f2, "左Click")}`;
   const timeText = suddenDeath ? "💀 SUDDEN DEATH" : `⏱ ${Math.max(0, Math.ceil(matchTimer))}`;
   stageHud.textContent = `🏟️ ${getCurrentStage().name} ｜ ${timeText}`;
   stageHud.classList.toggle("warn", suddenDeath || (screenMode === "battle" && countdownTimer <= 0 && matchTimer <= 10));
@@ -665,8 +665,8 @@ function applyItemEffect(fighter, item) {
   spawnParticles(cx, cy, 18, item.color);
 
   if (item.type === "heal") {
-    if (fighter.hp < MAX_HP) {
-      fighter.hp = Math.min(MAX_HP, fighter.hp + 1);
+    if (fighter.hp < fighter.maxHp) {
+      fighter.hp = Math.min(fighter.maxHp, fighter.hp + 1);
       spawnPopup(cx, cy - 26, "💖 HP +1!", "#ff5c8a");
     } else {
       spawnPopup(cx, cy - 26, "💖 MAX HP BONUS!", "#ff5c8a");
