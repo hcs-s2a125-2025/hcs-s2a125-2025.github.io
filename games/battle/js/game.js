@@ -4264,6 +4264,26 @@ function drawPulsesAndParticles() {
       ctx.ellipse(-6, -jitter, pl.radius * 0.4, pl.radius * 0.7, 0, 0, Math.PI * 2);
       ctx.stroke();
 
+    } else if (pl.style === "teddy_roll") {
+      // Attack hitbox marker: compact teddy inside a clearly visible rounded frame.
+      const spin = (pl.age || 0) * (pl.rollDir || 1) * 9;
+      const frameSize = pl.radius * 1.65;
+      ctx.rotate(spin);
+      ctx.fillStyle = "rgba(197, 138, 85, 0.22)";
+      ctx.strokeStyle = "#8b5e34";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(-frameSize / 2, -frameSize / 2, frameSize, frameSize, 7);
+      ctx.fill();
+      ctx.stroke();
+      ctx.strokeStyle = "#ffe0a8";
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(-frameSize / 2 + 3, -frameSize / 2 + 3, frameSize - 6, frameSize - 6);
+      ctx.font = '19px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("🧸", 0, 0);
+
     } else if (pl.style === "bounce_ball") {
       ctx.rotate((pl.age || 0) * 14);
       ctx.fillStyle = pl.color;
