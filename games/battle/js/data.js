@@ -606,17 +606,12 @@ const ITEM_TYPES = Object.keys(ITEM_DEFS);
 
 const STAGES = [
   {
-    id: "neon-grid",
-    name: "ネオン・グリッド",
-    desc: "中央シールド壁と上下多層足場を備えた王道アリーナ",
-    bgTop: "#120c2c",
-    bgBottom: "#24134d",
-    gridColor: "rgba(157, 78, 221, 0.16)",
-    floorAccent: "#72efdd",
-    shelfFill: "#2b1b59",
-    shelfAccent: "#c77dff",
-    wallFill: "#1f1447",
-    wallAccent: "#72efdd",
+    id: "city-skyline", theme: "city_day",
+    name: "🏙️ シティ・スカイライン",
+    desc: "青空に高層ビルがそびえる、見通しの良い都市アリーナ",
+    bgTop: "#76b8e8", bgBottom: "#d0b5a6", gridColor: "rgba(78,139,180,0.10)",
+    floorFill: "#202d3b", floorTop: "#405568", floorBottom: "#182532", floorAccent: "#71d4e8",
+    shelfFill: "#334b5e", shelfAccent: "#9be5ec", wallFill: "#243849", wallAccent: "#9be5ec",
     platforms: [
       { x: 0, y: GROUND_Y, w: VIEW_WIDTH, h: VIEW_HEIGHT - GROUND_Y, type: "floor" },
       { x: 468, y: 374, w: 24, h: 94, type: "wall" },
@@ -628,17 +623,12 @@ const STAGES = [
     ]
   },
   {
-    id: "cyber-tower",
-    name: "サイバー・タワー",
-    desc: "左右の防衛ピラー壁と螺旋足場が連なる立体タワー",
-    bgTop: "#0a192f",
-    bgBottom: "#172a45",
-    gridColor: "rgba(100, 255, 218, 0.13)",
-    floorAccent: "#64ffda",
-    shelfFill: "#1d3557",
-    shelfAccent: "#4cc9f0",
-    wallFill: "#13294b",
-    wallAccent: "#64ffda",
+    id: "twilight-tower", theme: "city_evening",
+    name: "🌆 トワイライト・タワー",
+    desc: "夕暮れの摩天楼と灯り始めた窓。左右の塔を渡り歩く立体戦",
+    bgTop: "#514d83", bgBottom: "#f29b78", gridColor: "rgba(255,181,145,0.10)",
+    floorFill: "#30243d", floorTop: "#61404d", floorBottom: "#211a30", floorAccent: "#ffad83",
+    shelfFill: "#493047", shelfAccent: "#ffc18f", wallFill: "#392841", wallAccent: "#ffad83",
     platforms: [
       { x: 0, y: GROUND_Y, w: VIEW_WIDTH, h: VIEW_HEIGHT - GROUND_Y, type: "floor" },
       { x: 255, y: 358, w: 24, h: 110, type: "wall" },
@@ -652,17 +642,12 @@ const STAGES = [
     ]
   },
   {
-    id: "sky-bridge",
-    name: "スカイ・ブリッジ",
-    desc: "大橋の両端に守護壁を備えた攻防メリハリステージ",
-    bgTop: "#230c2b",
-    bgBottom: "#42113c",
-    gridColor: "rgba(255, 112, 166, 0.15)",
-    floorAccent: "#ff70a6",
-    shelfFill: "#3b184a",
-    shelfAccent: "#ffd166",
-    wallFill: "#2c1138",
-    wallAccent: "#ff70a6",
+    id: "sunset-bridge", theme: "city_sunset",
+    name: "🌇 サンセット・ブリッジ",
+    desc: "燃えるような夕焼けと街並み。中央の大橋を巡る攻防ステージ",
+    bgTop: "#583c76", bgBottom: "#f18b68", gridColor: "rgba(255,194,137,0.10)",
+    floorFill: "#39243b", floorTop: "#70404b", floorBottom: "#281b32", floorAccent: "#ff9c75",
+    shelfFill: "#553344", shelfAccent: "#ffd18e", wallFill: "#43283a", wallAccent: "#ffb27c",
     platforms: [
       { x: 0, y: GROUND_Y, w: VIEW_WIDTH, h: VIEW_HEIGHT - GROUND_Y, type: "floor" },
       { x: 240, y: 245, w: 22, h: 95, type: "wall" },
@@ -675,17 +660,12 @@ const STAGES = [
     ]
   },
   {
-    id: "cyber-labyrinth",
-    name: "🧱 サイバー・ラビリンス",
-    desc: "多数の縦壁と足場が入り組む迷宮アリーナ！射線管理がカギ",
-    bgTop: "#0f1c1e",
-    bgBottom: "#1b3336",
-    gridColor: "rgba(114, 239, 221, 0.14)",
-    floorAccent: "#ffd166",
-    shelfFill: "#204044",
-    shelfAccent: "#72efdd",
-    wallFill: "#162d30",
-    wallAccent: "#ffd166",
+    id: "midnight-labyrinth", theme: "city_night",
+    name: "🌃 ミッドナイト・ラビリンス",
+    desc: "ネオンが瞬く深夜の繁華街。入り組んだ路地と高低差が勝負を分ける",
+    bgTop: "#101b3d", bgBottom: "#30234e", gridColor: "rgba(113,166,255,0.12)",
+    floorFill: "#171c36", floorTop: "#30385b", floorBottom: "#101528", floorAccent: "#8a9cff",
+    shelfFill: "#252d50", shelfAccent: "#78e1ff", wallFill: "#202744", wallAccent: "#a28cff",
     platforms: [
       { x: 0, y: GROUND_Y, w: VIEW_WIDTH, h: VIEW_HEIGHT - GROUND_Y, type: "floor" },
       { x: 210, y: 362, w: 22, h: 106, type: "wall" },
@@ -701,5 +681,80 @@ const STAGES = [
       { x: 665, y: 235, w: 180, h: 16, type: "shelf" },
       { x: 390, y: 185, w: 180, h: 16, type: "shelf" }
     ]
+  },
+  {
+    id: "ironworks", theme: "factory",
+    name: "🏭 アイアンワークス",
+    desc: "巨大な煙突と配管が並ぶ工業地帯。コンベア足場を使って攻め込め",
+    bgTop: "#263b43", bgBottom: "#76594c", gridColor: "rgba(255,190,112,0.08)",
+    floorFill: "#252d32", floorTop: "#505c5c", floorBottom: "#20272b", floorAccent: "#ffad55",
+    shelfFill: "#3d4848", shelfAccent: "#ffc36c", wallFill: "#303b3e", wallAccent: "#e18b4e",
+    platforms: [
+      { x: 0, y: GROUND_Y, w: VIEW_WIDTH, h: VIEW_HEIGHT - GROUND_Y, type: "floor" },
+      { x: 468, y: 360, w: 24, h: 108, type: "wall" },
+      { x: 90, y: 385, w: 180, h: 18, type: "shelf" },
+      { x: 690, y: 385, w: 180, h: 18, type: "shelf" },
+      { x: 300, y: 310, w: 150, h: 18, type: "shelf" },
+      { x: 510, y: 310, w: 150, h: 18, type: "shelf" },
+      { x: 155, y: 215, w: 170, h: 18, type: "shelf" },
+      { x: 635, y: 215, w: 170, h: 18, type: "shelf" }
+    ]
+  },
+  {
+    id: "moon-castle", theme: "castle",
+    name: "🏯 ムーンライト・キャッスル",
+    desc: "月明かりに浮かぶ天守と石垣。城壁の上を奪い合う高低差バトル",
+    bgTop: "#182744", bgBottom: "#51435e", gridColor: "rgba(191,202,228,0.08)",
+    floorFill: "#292a3d", floorTop: "#55536a", floorBottom: "#222336", floorAccent: "#c7b8a1",
+    shelfFill: "#45435a", shelfAccent: "#d7c7a7", wallFill: "#34344c", wallAccent: "#d7c7a7",
+    platforms: [
+      { x: 0, y: GROUND_Y, w: VIEW_WIDTH, h: VIEW_HEIGHT - GROUND_Y, type: "floor" },
+      { x: 245, y: 300, w: 24, h: 168, type: "wall" },
+      { x: 691, y: 300, w: 24, h: 168, type: "wall" },
+      { x: 468, y: 365, w: 24, h: 103, type: "wall" },
+      { x: 65, y: 375, w: 145, h: 18, type: "shelf" },
+      { x: 750, y: 375, w: 145, h: 18, type: "shelf" },
+      { x: 300, y: 290, w: 150, h: 18, type: "shelf" },
+      { x: 510, y: 290, w: 150, h: 18, type: "shelf" },
+      { x: 375, y: 205, w: 210, h: 18, type: "shelf" },
+      { x: 100, y: 175, w: 120, h: 18, type: "shelf" },
+      { x: 740, y: 175, w: 120, h: 18, type: "shelf" }
+    ]
+  },
+  {
+    id: "construction-yard", theme: "construction",
+    name: "🏗️ メガ・コンストラクション",
+    desc: "クレーンと鉄骨がそびえる建設現場。組み上がる足場を駆け上がれ",
+    bgTop: "#607d91", bgBottom: "#c28b64", gridColor: "rgba(255,223,157,0.08)",
+    floorFill: "#373c3c", floorTop: "#64645a", floorBottom: "#292e31", floorAccent: "#f6c34d",
+    shelfFill: "#515657", shelfAccent: "#f6c34d", wallFill: "#454d50", wallAccent: "#e9a94b",
+    platforms: [
+      { x: 0, y: GROUND_Y, w: VIEW_WIDTH, h: VIEW_HEIGHT - GROUND_Y, type: "floor" },
+      { x: 292, y: 345, w: 22, h: 123, type: "wall" },
+      { x: 646, y: 345, w: 22, h: 123, type: "wall" },
+      { x: 468, y: 255, w: 24, h: 90, type: "wall" },
+      { x: 70, y: 385, w: 160, h: 18, type: "shelf" },
+      { x: 730, y: 385, w: 160, h: 18, type: "shelf" },
+      { x: 180, y: 290, w: 170, h: 18, type: "shelf" },
+      { x: 610, y: 290, w: 170, h: 18, type: "shelf" },
+      { x: 375, y: 185, w: 210, h: 18, type: "shelf" }
+    ]
+  },
+  {
+    id: "starlight-camp", theme: "campsite",
+    name: "🏕️ スターライト・キャンプ",
+    desc: "山あいの静かなキャンプ場。岩場とテントを見下ろす星空のステージ",
+    bgTop: "#172c45", bgBottom: "#465d61", gridColor: "rgba(176,220,205,0.06)",
+    floorFill: "#253d38", floorTop: "#476052", floorBottom: "#1d302d", floorAccent: "#a8d59c",
+    shelfFill: "#405449", shelfAccent: "#c7df9c", wallFill: "#34483f", wallAccent: "#a8d59c",
+    platforms: [
+      { x: 0, y: GROUND_Y, w: VIEW_WIDTH, h: VIEW_HEIGHT - GROUND_Y, type: "floor" },
+      { x: 92, y: 382, w: 165, h: 18, type: "shelf" },
+      { x: 703, y: 382, w: 165, h: 18, type: "shelf" },
+      { x: 360, y: 310, w: 240, h: 18, type: "shelf" },
+      { x: 165, y: 225, w: 165, h: 18, type: "shelf" },
+      { x: 630, y: 225, w: 165, h: 18, type: "shelf" },
+      { x: 445, y: 175, w: 70, h: 18, type: "shelf" }
+    ]
   }
-];
+];;
