@@ -1959,21 +1959,13 @@ function triggerSpecialAction(fighter) {
     }
     spawnParticles(cx + fighter.facing * 24, cy, 18, pColor);
     spawnParticles(cx + fighter.facing * 24, cy, 10, subGlow);
-  } else if (type === "monocle_volley") {
+   } else if (type === "monocle_arc") {
     fighter.specialCooldown = fighter.def.specialCooldown;
-    spawnPopup(cx, cy - 28, "🧐 MONOCLE OFF!", "#8bd3ff");
-    const target = fighters.find((other) => other.id !== fighter.id);
-    const tx = target ? target.x + target.w / 2 : cx + fighter.facing * 300;
-    const ty = target ? target.y + target.h / 2 : cy;
-    for (let n = 0; n < 3; n++) {
-      const aimX = tx + (Math.random() - 0.5) * 95;
-      const aimY = ty + (Math.random() - 0.5) * 90;
-      const angle = Math.atan2(aimY - cy, aimX - cx);
-      pulses.push({ ownerId: fighter.id, playerColor: fighter.accentColor, style: "monocle", x: cx + fighter.facing * 18, y: cy,
-        vx: Math.cos(angle) * 590, vy: Math.sin(angle) * 590, gravity: 0, dir: fighter.facing, radius: 15, knockVx: 390,
-        chillDuration: 0, life: 0.65, maxLife: 0.65, age: 0, color: "#8bd3ff" });
-    }
-    spawnParticles(cx, cy, 14, "#8bd3ff");
+    spawnPopup(cx, cy - 28, "🧐 BIG MONOCLE!", "#8bd3ff");
+    pulses.push({ ownerId: fighter.id, playerColor: fighter.accentColor, style: "monocle", x: cx + fighter.facing * 24, y: cy - 4,
+      vx: fighter.facing * 310, vy: -500, gravity: 1120, dir: fighter.facing, radius: 27, knockVx: 510,
+      chillDuration: 0, life: 0.58, maxLife: 0.58, age: 0, color: "#8bd3ff" });
+    spawnParticles(cx + fighter.facing * 22, cy, 18, "#8bd3ff");
   } else if (type === "teddy_guard") {
     fighter.specialCooldown = fighter.def.specialCooldown;
     fighter.teddyGuardTimer = fighter.def.teddyGuardDuration || 1.8;
