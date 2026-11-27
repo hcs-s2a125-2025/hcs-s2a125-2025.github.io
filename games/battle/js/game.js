@@ -2184,6 +2184,7 @@ function triggerSpecialAction(fighter) {
 
 function hitFighter(target, attackerCenterX, baseKnockVx = 340, chillDuration = 0, damage = 1, pullSpeed = 0) {
   if (screenMode !== "battle") return;
+  if (target.teddyGuardTimer > 0) { spawnParticles(target.x+target.w/2,target.y+target.h/2,6,"#c58a55"); return; }
   if (target.invincibleTimer > 0 || target.starTimer > 0) {
     if (pullSpeed > 0) { const side = (target.x + target.w / 2) >= attackerCenterX ? 1 : -1; target.vx = -side * Math.min(300, pullSpeed * 0.46); target.vy = -80; target.onGround = false; spawnParticles(target.x + target.w / 2, target.y + target.h / 2, 5, "#ff82bd"); }
     return;
@@ -2258,6 +2259,8 @@ function stepFighter(f, input, dt, platforms) {
   }
   if (f.pulseTimer > 0) f.pulseTimer = Math.max(0, f.pulseTimer - dt);
   if (f.pulseCooldown > 0) f.pulseCooldown = Math.max(0, f.pulseCooldown - dt);
+  if (f.attackLockTimer > 0) f.attackLockTimer = Math.max(0, f.attackLockTimer - dt);
+  if (f.teddyGuardTimer > 0) f.teddyGuardTimer = Math.max(0, f.teddyGuardTimer - dt);
   if (f.attackLockTimer > 0) f.attackLockTimer = Math.max(0, f.attackLockTimer - dt);
   if (f.teddyGuardTimer > 0) f.teddyGuardTimer = Math.max(0, f.teddyGuardTimer - dt);
   if (f.chillTimer > 0) {
