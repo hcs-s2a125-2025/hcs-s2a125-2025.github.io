@@ -743,6 +743,7 @@ function spawnPopup(x, y, text, color = "#ffd166") {
     y,
     text,
     color,
+    age: 0,
     life: 0.95,
     maxLife: 0.95
   });
@@ -2584,6 +2585,7 @@ function update(dt) {
 
   for (let i = floatingPopups.length - 1; i >= 0; i--) {
     const fp = floatingPopups[i];
+    fp.age = (fp.age || 0) + dt;
     fp.y -= 38 * dt;
     fp.life -= dt;
     if (fp.life <= 0) floatingPopups.splice(i, 1);
@@ -3784,15 +3786,24 @@ function drawPulsesAndParticles() {
   }
 
   for (const fp of floatingPopups) {
+    const entrance = Math.min(1, (fp.age || 0) / 0.18);
+    const popScale = entrance < 1
+      ? 0.72 + Math.sin(entrance * Math.PI / 2) * 0.42
+      : 1.14 - Math.min(0.14, ((fp.age || 0) - 0.18) * 0.8);
     ctx.save();
     ctx.globalAlpha = Math.min(1, fp.life / 0.3);
-    ctx.font = "bold 15px sans-serif";
+    ctx.translate(fp.x, fp.y);
+    ctx.scale(popScale, popScale);
+    ctx.font = "900 16px sans-serif";
     ctx.textAlign = "center";
     ctx.strokeStyle = "#0b0918";
-    ctx.lineWidth = 4;
-    ctx.strokeText(fp.text, fp.x, fp.y);
+    ctx.lineWidth = 5;
+    ctx.lineJoin = "round";
+    ctx.shadowColor = fp.color;
+    ctx.shadowBlur = 10;
+    ctx.strokeText(fp.text, 0, 0);
     ctx.fillStyle = fp.color;
-    ctx.fillText(fp.text, fp.x, fp.y);
+    ctx.fillText(fp.text, 0, 0);
     ctx.restore();
   }
 
