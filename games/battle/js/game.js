@@ -3075,6 +3075,30 @@ function update(dt) {
         if (target.id === pl.ownerId) continue;
         const tcx = target.x + target.w / 2;
         const tcy = target.y + target.h / 2;
+
+        // 🧸専用判定: 通常弾の「命中したら消える」処理から分離。
+        // 地面を転がる間、横方向の接触 + 足元付近で判定し、命中後も本体は残る。
+        if (pl.teddyRoll) {
+          pl.teddyHitIds = pl.teddyHitIds || new Set();
+          const teddyHit = Math.abs(pl.x - tcx) <= pl.radius + target.w * 0.38 &&
+            target.y + target.h >= GROUND_Y - pl.radius * 1.15 &&
+            target.y <= GROUND_Y + 2;
+          if (!teddyHit || pl.teddyHitIds.has(target.id)) continue;
+          pl.teddyHitIds.add(target.id);
+          if (target.barrierTimer > 0 || target.teddyGuardTimer > 0) {
+            spawnParticles(pl.x, GROUND_Y - 8, 8, "#c58a55");
+            pl.rollPhase = "walk";
+            pl.rollDir = -pl.rollDir;
+            pl.rollSpeed = 145;
+            continue;
+          }
+          hitFighter(target, pl.x, (pl.knockVx || 380) * 0.72, pl.chillDuration || 0);
+          if (screenMode !== "battle") return;
+          spawnParticles(pl.x, GROUND_Y - 8, 9, "#c58a55");
+          spawnPopup(pl.x, GROUND_Y - 32, "🧸 HIT!", "#c58a55");
+          continue;
+        }
+
         const dist = Math.hypot(pl.x - tcx, pl.y - tcy);
         if (dist <= pl.radius + target.w * 0.5) {
           if (target.barrierTimer > 0) {
