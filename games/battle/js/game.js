@@ -3085,7 +3085,9 @@ function update(dt) {
           if (screenMode !== "battle") return;
           spawnParticles(pl.x, GROUND_Y - 8, 9, "#c58a55");
           spawnPopup(pl.x, GROUND_Y - 32, "🧸 HIT!", "#c58a55");
-          continue;
+          // 敵本体に命中した場合だけ、🧸を消費する
+          pulses.splice(i, 1);
+          break;
         }
 
         const dist = Math.hypot(pl.x - tcx, pl.y - tcy);
@@ -4292,21 +4294,10 @@ function drawPulsesAndParticles() {
       ctx.stroke();
 
     } else if (pl.style === "teddy_roll") {
-      // Attack hitbox marker: compact teddy inside a clearly visible rounded frame.
+      // 🧸本体だけを表示し、転がる動きに合わせて回転させる
       const spin = (pl.age || 0) * (pl.rollDir || 1) * 9;
-      const frameSize = pl.radius * 1.65;
       ctx.rotate(spin);
-      ctx.fillStyle = "rgba(197, 138, 85, 0.22)";
-      ctx.strokeStyle = "#8b5e34";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.roundRect(-frameSize / 2, -frameSize / 2, frameSize, frameSize, 7);
-      ctx.fill();
-      ctx.stroke();
-      ctx.strokeStyle = "#ffe0a8";
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(-frameSize / 2 + 3, -frameSize / 2 + 3, frameSize - 6, frameSize - 6);
-      ctx.font = '19px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+      ctx.font = '30px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText("🧸", 0, 0);
