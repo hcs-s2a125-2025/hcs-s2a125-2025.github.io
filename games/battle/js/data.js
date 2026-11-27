@@ -20,7 +20,7 @@ const CHARACTER_DEFS = {
   "🤩": {
     emoji: "🤩",
     abilityName: "⚡ スター・シュリケン",
-    abilityDesc: "弾種：壁で1度反射する高速スター手裏剣 ／ 接近戦向けの高回転攻撃（最大射程：約190px）"
+    abilityDesc: "弾種：壁で1度反射する高速スター手裏剣 ／ 接近戦向けの高回転攻撃（最大射程：約190px）",
     specialName: "特殊：スター・フラッシュ突進",
     specialDesc: "前方に短距離高速突進（突進0.15s・終了後CT 3.2s）",
     specialType: "dash_strike",
@@ -65,7 +65,7 @@ const CHARACTER_DEFS = {
   "🥴": {
     emoji: "🥴",
     abilityName: "🛡️ 酔いどれバブル・タフネス",
-    abilityDesc: "弾種：ゆらゆら漂う軌道不規則なバブル ／ 無敵時間＆耐性アップ（最大射程：約280px）"
+    abilityDesc: "弾種：ゆらゆら漂う軌道不規則なバブル ／ 無敵時間＆耐性アップ（最大射程：約280px）",
     specialName: "特殊：ネオン・ガードバリア",
     specialDesc: "1.05秒バリア＆弾反射（効果終了後CT 5.0s）",
     specialType: "barrier",
@@ -109,7 +109,7 @@ const CHARACTER_DEFS = {
   "🫨": {
     emoji: "🫨",
     abilityName: "💥 シェイク・ソニックリング",
-    abilityDesc: "弾種：地面すれすれを進む振動リング ／ 発射時振動波（最大射程：約155px)"
+    abilityDesc: "弾種：地面すれすれを進む振動リング ／ 発射時振動波（最大射程：約155px）",
     specialName: "特殊：メガ・グラビティ振動",
     specialDesc: "近距離の広範囲振動波（半径92px・CT 4.0s）",
     specialType: "mega_quake",
@@ -131,7 +131,7 @@ const CHARACTER_DEFS = {
   "🤯": {
     emoji: "🤯",
     abilityName: "💥 ブレイン・スパーク",
-    abilityDesc: "弾種：高速回転スパーク弾（命中時に小爆発） ／ パワーバランス型（最大射程：約270px）"
+    abilityDesc: "弾種：高速回転スパーク弾（命中時に小爆発） ／ パワーバランス型（最大射程：約270px）",
     specialName: "特殊：🤯 ギガ・メルトダウン（一発どかん！）",
     specialDesc: "0.45秒のチャージ後、超巨大爆発（半径155px・特大吹っ飛ばし・CT 5.2s）",
     specialType: "mind_explosion",
@@ -178,7 +178,7 @@ const CHARACTER_DEFS = {
   "🤡": {
     emoji: "🤡",
     abilityName: "🎪 トリッキー・ジャグリング",
-    abilityDesc: "弾種：床で最大2回バウンドし、壁でも跳ね返るカラフルボール弾（最大射程：約480px）"
+    abilityDesc: "弾種：床で最大2回バウンドし、壁でも跳ね返るカラフルボール弾（最大射程：約480px）",
     specialName: "特殊：🃏 ジョーカー・ワイルドカード",
     specialDesc: "高速カード弾を発射！命中or壁着弾で衝撃波・凍結・連射・追撃がランダム炸裂（CT 3.8s）",
     specialType: "joker_card",
@@ -199,7 +199,7 @@ const CHARACTER_DEFS = {
   "🤑": {
     emoji: "🤑",
     abilityName: "🪙 ゴールデン・コイン弾",
-    abilityDesc: "弾種：壁で1度反射する回転ゴールドコイン弾 ／ 軽快ステップ（最大射程：約310px）"
+    abilityDesc: "弾種：壁で1度反射する回転ゴールドコイン弾 ／ 軽快ステップ（最大射程：約310px）",
     specialName: "特殊：🎰 ジャックポット・スロット",
     specialDesc: "スロット回転！777大当たりで特大3way＋衝撃波、中当たりで5way金貨シャワー（CT 4.2s）",
     specialType: "slot_jackpot",
@@ -221,7 +221,7 @@ const CHARACTER_DEFS = {
   "🗺️": {
     emoji: "🗺️",
     abilityName: "🧭 アトラス・コンパスアロー",
-    abilityDesc: "弾種：相手へわずかに軌道修正するコンパス針弾 ／ 高機動力＆ジャンプ力（最大射程：約330px)"
+    abilityDesc: "弾種：相手へわずかに軌道修正するコンパス針弾 ／ 高機動力＆ジャンプ力（最大射程：約330px）",
     specialName: "特殊：📍 アトラス・ウェイポイント",
     specialDesc: "1回目でピン設置、2回目でピン地点を起爆（広範囲衝撃波＋3方向コンパス弾・CT 4.0s）",
     specialType: "atlas_waypoint",
@@ -265,7 +265,7 @@ const CHARACTER_DEFS = {
   "💀": {
     emoji: "💀",
     abilityName: "☠️ スカル・リーパーサイス",
-    abilityDesc: "弾種：一定距離で持ち主へ戻る死神の鎌弾 ／ 大ノックバック（最大射程：約310px）"
+    abilityDesc: "弾種：一定距離で持ち主へ戻る死神の鎌弾 ／ 大ノックバック（最大射程：約310px）",
     specialName: "特殊：ソウル・ブーメラン",
     specialDesc: "前方に飛んで手元に戻る巨大ブーメラン弾（CT 4.0s）",
     specialType: "boomerang",
@@ -287,7 +287,7 @@ const CHARACTER_DEFS = {
   "🫠": {
     emoji: "🫠",
     abilityName: "🫠 メルト・スライムショット",
-    abilityDesc: "弾種：山なりの溶解液弾 ／ 着弾地点にスライム床を残して移動を妨害（最大射程：約260px）"
+    abilityDesc: "弾種：山なりの溶解液弾 ／ 着弾地点にスライム床を残して移動を妨害（最大射程：約260px）",
     specialName: "特殊：アシッド・メルトゾーン",
     specialDesc: "足元に3秒間残る溶解トラップ設置（CT 4.8s）",
     specialType: "melt_pool",
@@ -308,7 +308,7 @@ const CHARACTER_DEFS = {
   "🫥": {
     emoji: "🫥",
     abilityName: "👻 ファントム・ウィスプ",
-    abilityDesc: "弾種：明滅しながら壁をすり抜ける霊魂弾 ／ 軽快移動＆高い2段ジャンプ（最大射程：約240px）"
+    abilityDesc: "弾種：明滅しながら壁をすり抜ける霊魂弾 ／ 軽快移動＆高い2段ジャンプ（最大射程：約240px）",
     specialName: "特殊：インビジブル・ステルス",
     specialDesc: "1.2秒間透明化＆移動速度大幅アップ（効果終了後CT 4.6s）",
     specialType: "stealth",
@@ -354,7 +354,7 @@ const CHARACTER_DEFS = {
   "🈁": {
     emoji: "🈁",
     abilityName: "💠 サイバー・スクエア弾",
-    abilityDesc: "弾種：着弾時に小さな電撃を放つ回転キューブ弾 ／ 高機動バランス（最大射程：約300px）"
+    abilityDesc: "弾種：着弾時に小さな電撃を放つ回転キューブ弾 ／ 高機動バランス（最大射程：約300px）",
     specialName: "特殊：テレポート・ビーコン",
     specialDesc: "1回目でビーコン設置、2回目で設置地点へ瞬間ワープ（ワープ後CT 4.0s）",
     specialType: "warp_beacon",
@@ -400,7 +400,7 @@ const CHARACTER_DEFS = {
   "🤖": {
     emoji: "🤖",
     abilityName: "⚡ プラズマ・イオンキャノン",
-    abilityDesc: "弾種：着弾時にプラズマ衝撃を起こす高弾速弾 ／ 重装甲・高ノックバック（最大射程：約350px）"
+    abilityDesc: "弾種：着弾時にプラズマ衝撃を起こす高弾速弾 ／ 重装甲・高ノックバック（最大射程：約350px）",
     specialName: "特殊：ジェット・ミサイルバラージ",
     specialDesc: "短時間ホバリング浮遊しながら前方斜め下へ4連装マイクロミサイル発射（CT 4.5s）",
     specialType: "mecha_barrage",
@@ -445,7 +445,7 @@ const CHARACTER_DEFS = {
   "👾": {
     emoji: "👾",
     abilityName: "🕹️ 8bit・ピクセルレーザー",
-    abilityDesc: "弾種：障害物をすり抜けるドット絵レーザー弾 ／ 高速連射＆長射程（最大射程：約420px）"
+    abilityDesc: "弾種：障害物をすり抜けるドット絵レーザー弾 ／ 高速連射＆長射程（最大射程：約420px）",
     specialName: "特殊：UFO・インベージョン空爆",
     specialDesc: "上空にUFOを召喚し、移動しながら真下へ3発ビーム投下（CT 4.6s）",
     specialType: "ufo_airstrike",
@@ -468,7 +468,7 @@ const CHARACTER_DEFS = {
     emoji: "😇",
     selectLabel: "😇😈",
     abilityName: "👼😈 デュアル・モーフ（天使⇔悪魔変身）",
-    abilityDesc: "😇時：命中後に手元へ戻る聖光輪弾・低重力グライド ／ 😈時：紅蓮炎弾・踏み込み強撃"
+    abilityDesc: "😇時：命中後に手元へ戻る聖光輪弾・低重力グライド ／ 😈時：紅蓮炎弾・踏み込み強撃",
     specialName: "特殊：エンジェル⇔デビル変身",
     specialDesc: "押すたびに😇と😈が切り替わり弾種・基本性能・パッシブが変化（CT 3.2s）",
     specialType: "transform_angel_devil",
