@@ -2946,7 +2946,7 @@ function update(dt) {
 
       let hitWall = false;
       for (const p of stage.platforms) {
-        if (p.type !== "wall" || pl.phaseWalls) continue;
+        if (p.type !== "wall" || pl.phaseWalls || pl.teddyRoll) continue;
         const hitR = Math.min(10, pl.radius * 0.55);
         if (
           pl.x + hitR >= p.x &&
@@ -3031,7 +3031,8 @@ function update(dt) {
             hitIds: new Set()
           });
           spawnParticles(pl.x, GROUND_Y, 10, "#b08968");
-        } else if (pl.style === "teddy_friend") {
+        } else if (pl.style === "teddy_friend" || pl.style === "teddy_roll") {
+      ctx.rotate((pl.age || 0) * (pl.rollDir || 1) * 9);
       ctx.font = '28px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif'; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("🧸", 0, 0);
     } else if (pl.style === "tear_drop") {
       ctx.fillStyle = pl.color; ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 2;
