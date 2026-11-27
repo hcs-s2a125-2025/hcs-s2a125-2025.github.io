@@ -3005,17 +3005,27 @@ function update(dt) {
       }
 
       if (pl.vy > 0 && pl.y >= GROUND_Y) {
+        // 🧸通常攻撃: 着地を消滅扱いにせず、転がりフェーズへ切り替えて更新ループを続ける
         if (pl.teddyRoll && pl.rollPhase === "drop") {
           pl.y = GROUND_Y - pl.radius * 0.82;
           pl.rollPhase = "roll";
-          pl.rollDir = pl.dir;
+          pl.rollDir = pl.dir || (pl.vx >= 0 ? 1 : -1);
           pl.rollDistance = 0;
           pl.vy = 0;
+          pl.vx = pl.rollDir * pl.rollSpeed;
           spawnParticles(pl.x, GROUND_Y, 5, "#c58a55");
-        } else if (pl.style === "teddy_friend" && (pl.teddyLanded || 0) < (pl.teddyBounces || 0)) {
-          pl.y = GROUND_Y - pl.radius; pl.teddyLanded = (pl.teddyLanded || 0) + 1;
-          pl.vy = -390; pl.vx += pl.dir * 95; spawnParticles(pl.x, GROUND_Y, 7, "#c58a55"); continue;
+          continue;
         }
+
+        if (pl.style === "teddy_friend" && (pl.teddyLanded || 0) < (pl.teddyBounces || 0)) {
+          pl.y = GROUND_Y - pl.radius;
+          pl.teddyLanded = (pl.teddyLanded || 0) + 1;
+          pl.vy = -390;
+          pl.vx += pl.dir * 95;
+          spawnParticles(pl.x, GROUND_Y, 7, "#c58a55");
+          continue;
+        }
+
         if (pl.style === "bounce_ball" && (pl.groundBounces || 0) < 2) {
           pl.y = GROUND_Y - pl.radius;
           pl.vy = -Math.max(300, Math.abs(pl.vy) * 0.72);
@@ -3023,48 +3033,27 @@ function update(dt) {
           spawnParticles(pl.x, GROUND_Y, 9, pl.color);
           continue;
         }
+
         if (pl.style === "poop_bomb") {
           shockwaves.push({
-            ownerId: pl.ownerId,
-            x: pl.x,
-            y: GROUND_Y - 4,
-            maxRadius: 42,
-            radius: 10,
-            life: 0.18,
-            maxLife: 0.18,
-            color: "#b08968",
-            knockVx: 360,
-            hitIds: new Set()
+            ownerId: pl.ownerId, x: pl.x, y: GROUND_Y - 4,
+            maxRadius: 42, radius: 10, life: 0.18, maxLife: 0.18,
+            color: "#b08968", knockVx: 360, hitIds: new Set()
           });
           spawnParticles(pl.x, GROUND_Y, 10, "#b08968");
-        } else if (pl.style === "teddy_friend" || pl.style === "teddy_roll") {
-      ctx.rotate((pl.age || 0) * (pl.rollDir || 1) * 9);
-      ctx.font = '28px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif'; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("🧸", 0, 0);
-    } else if (pl.style === "tear_drop") {
-      ctx.fillStyle = pl.color; ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(0, -pl.radius * 1.3); ctx.bezierCurveTo(pl.radius*1.2,-pl.radius*.4,pl.radius,pl.radius*.8,0,pl.radius); ctx.bezierCurveTo(-pl.radius,pl.radius*.8,-pl.radius*1.2,-pl.radius*.4,0,-pl.radius*1.3); ctx.fill(); ctx.stroke();
-    } else if (pl.style === "laser_bolt") {
-      ctx.strokeStyle = "#dff7ff"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-pl.radius*3,0); ctx.lineTo(pl.radius*3,0); ctx.stroke();
-      ctx.strokeStyle = pl.color; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(-pl.radius*2,0); ctx.lineTo(pl.radius*2,0); ctx.stroke();
-    } else if (pl.style === "monocle") {
-      ctx.strokeStyle = "#8bd3ff"; ctx.fillStyle = "rgba(139,211,255,0.35)"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0,0,pl.radius,0,Math.PI*2); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(pl.radius*.65,pl.radius*.65); ctx.lineTo(pl.radius*1.8,pl.radius*1.8); ctx.stroke();
-    } else if (pl.style === "bounce_ball") {
-          spawnParticles(pl.x, GROUND_Y, 12, pl.color);
-          spawnParticles(pl.x, GROUND_Y, 5, "#ffd166");
         } else if (pl.style === "mecha_missile") {
           spawnParticles(pl.x, GROUND_Y, 12, "#ff9f1c");
           spawnParticles(pl.x, GROUND_Y, 6, "#ff5c8a");
         } else {
           spawnParticles(pl.x, GROUND_Y, 6, pl.color);
         }
+
         if (pl.impactBurstRadius > 0 || pl.slimePoolDuration > 0) {
           spawnProjectileImpact(pl, pl.x, GROUND_Y - 4);
         }
         pulses.splice(i, 1);
         continue;
       }
-
       pl.life -= dt;
       if (pl.life <= 0 || pl.x < -60 || pl.x > VIEW_WIDTH + 60) {
         pulses.splice(i, 1);
