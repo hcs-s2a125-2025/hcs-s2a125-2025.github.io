@@ -606,9 +606,9 @@ const ITEM_TYPES = Object.keys(ITEM_DEFS);
 
 const STAGES = [
   {
-    id: "city-skyline", theme: "city_day",
-    name: "🏙️ シティ・スカイライン",
-    desc: "青空に高層ビルがそびえる、見通しの良い都市アリーナ",
+    id: "city-arena", theme: "city_day",
+    name: "🏙️ シティ・アリーナ",
+    desc: "昼・夕方・夕焼け・深夜。対戦ごとに時間帯がランダムで変わる都市ステージ",
     bgTop: "#76b8e8", bgBottom: "#d0b5a6", gridColor: "rgba(78,139,180,0.10)",
     floorFill: "#202d3b", floorTop: "#405568", floorBottom: "#182532", floorAccent: "#71d4e8",
     shelfFill: "#334b5e", shelfAccent: "#9be5ec", wallFill: "#243849", wallAccent: "#9be5ec",
@@ -620,66 +620,6 @@ const STAGES = [
       { x: 370, y: 280, w: 220, h: 18, type: "shelf" },
       { x: 165, y: 195, w: 150, h: 18, type: "shelf" },
       { x: 645, y: 195, w: 150, h: 18, type: "shelf" }
-    ]
-  },
-  {
-    id: "twilight-tower", theme: "city_evening",
-    name: "🌆 トワイライト・タワー",
-    desc: "夕暮れの摩天楼と灯り始めた窓。左右の塔を渡り歩く立体戦",
-    bgTop: "#514d83", bgBottom: "#f29b78", gridColor: "rgba(255,181,145,0.10)",
-    floorFill: "#30243d", floorTop: "#61404d", floorBottom: "#211a30", floorAccent: "#ffad83",
-    shelfFill: "#493047", shelfAccent: "#ffc18f", wallFill: "#392841", wallAccent: "#ffad83",
-    platforms: [
-      { x: 0, y: GROUND_Y, w: VIEW_WIDTH, h: VIEW_HEIGHT - GROUND_Y, type: "floor" },
-      { x: 255, y: 358, w: 24, h: 110, type: "wall" },
-      { x: 681, y: 358, w: 24, h: 110, type: "wall" },
-      { x: 468, y: 150, w: 24, h: 95, type: "wall" },
-      { x: 75, y: 380, w: 155, h: 18, type: "shelf" },
-      { x: 730, y: 380, w: 155, h: 18, type: "shelf" },
-      { x: 310, y: 315, w: 140, h: 18, type: "shelf" },
-      { x: 510, y: 315, w: 140, h: 18, type: "shelf" },
-      { x: 375, y: 245, w: 210, h: 18, type: "shelf" }
-    ]
-  },
-  {
-    id: "sunset-bridge", theme: "city_sunset",
-    name: "🌇 サンセット・ブリッジ",
-    desc: "燃えるような夕焼けと街並み。中央の大橋を巡る攻防ステージ",
-    bgTop: "#583c76", bgBottom: "#f18b68", gridColor: "rgba(255,194,137,0.10)",
-    floorFill: "#39243b", floorTop: "#70404b", floorBottom: "#281b32", floorAccent: "#ff9c75",
-    shelfFill: "#553344", shelfAccent: "#ffd18e", wallFill: "#43283a", wallAccent: "#ffb27c",
-    platforms: [
-      { x: 0, y: GROUND_Y, w: VIEW_WIDTH, h: VIEW_HEIGHT - GROUND_Y, type: "floor" },
-      { x: 240, y: 245, w: 22, h: 95, type: "wall" },
-      { x: 698, y: 245, w: 22, h: 95, type: "wall" },
-      { x: 469, y: 380, w: 22, h: 88, type: "wall" },
-      { x: 262, y: 322, w: 436, h: 18, type: "shelf" },
-      { x: 65, y: 350, w: 145, h: 18, type: "shelf" },
-      { x: 750, y: 350, w: 145, h: 18, type: "shelf" },
-      { x: 400, y: 210, w: 160, h: 18, type: "shelf" }
-    ]
-  },
-  {
-    id: "midnight-labyrinth", theme: "city_night",
-    name: "🌃 ミッドナイト・ラビリンス",
-    desc: "ネオンが瞬く深夜の繁華街。入り組んだ路地と高低差が勝負を分ける",
-    bgTop: "#101b3d", bgBottom: "#30234e", gridColor: "rgba(113,166,255,0.12)",
-    floorFill: "#171c36", floorTop: "#30385b", floorBottom: "#101528", floorAccent: "#8a9cff",
-    shelfFill: "#252d50", shelfAccent: "#78e1ff", wallFill: "#202744", wallAccent: "#a28cff",
-    platforms: [
-      { x: 0, y: GROUND_Y, w: VIEW_WIDTH, h: VIEW_HEIGHT - GROUND_Y, type: "floor" },
-      { x: 210, y: 362, w: 22, h: 106, type: "wall" },
-      { x: 469, y: 348, w: 22, h: 120, type: "wall" },
-      { x: 728, y: 362, w: 22, h: 106, type: "wall" },
-      { x: 335, y: 205, w: 22, h: 110, type: "wall" },
-      { x: 603, y: 205, w: 22, h: 110, type: "wall" },
-      { x: 75, y: 370, w: 120, h: 16, type: "shelf" },
-      { x: 765, y: 370, w: 120, h: 16, type: "shelf" },
-      { x: 255, y: 315, w: 185, h: 16, type: "shelf" },
-      { x: 520, y: 315, w: 185, h: 16, type: "shelf" },
-      { x: 115, y: 235, w: 180, h: 16, type: "shelf" },
-      { x: 665, y: 235, w: 180, h: 16, type: "shelf" },
-      { x: 390, y: 185, w: 180, h: 16, type: "shelf" }
     ]
   },
   {
