@@ -1323,6 +1323,30 @@ function applyItemEffect(fighter, item) {
   updateHud();
 }
 
+const CRY_FIELD_ALLOWED_SPECIALS = new Set([
+  "barrier",        // 自分への防御バリア
+  "stealth",        // 自分への透明化・移動強化
+  "teddy_guard",    // 自分を守る護衛
+  "bandage_change"  // 自分のHP回復
+]);
+
+function isInsideEnemyCryField(fighter) {
+  const cx = fighter.x + fighter.w / 2;
+  const cy = fighter.y + fighter.h / 2;
+  return hazardZones.some((zone) => {
+    if (zone.type !== "cry_field" || zone.ownerId === fighter.id || zone.life <= 0) return false;
+    const rx = Math.max(1, zone.width / 2);
+    const ry = Math.max(1, zone.height / 2);
+    const nx = (cx - zone.x) / rx;
+    const ny = (cy - zone.y) / ry;
+    return nx * nx + ny * ny <= 1;
+  });
+}
+
+function canUseSpecialInsideEnemyCryField(fighter) {
+  return CRY_FIELD_ALLOWED_SPECIALS.has(fighter.def.specialType);
+}
+
 function getChargedPulseRangeLife(def, chargeRatio, rangeMultiplier = 1) {
   const ratio = Math.max(0, Math.min(1, chargeRatio));
   const exponent = Math.max(1, def.pulseRangeChargeExponent || 1);
@@ -1332,7 +1356,7 @@ function getChargedPulseRangeLife(def, chargeRatio, rangeMultiplier = 1) {
 }
 
 function triggerPulse(fighter, chargeRatio = 0) {
-  if (fighter.pulseCooldown > 0 || fighter.mindChargeTimer > 0) return;
+  if (fighter.pulseCooldown > 0 || fighter.mindChargeTimer > 0 || isInsideEnemyCryField(fighter)) return;
   fighter.pulseTimer = PULSE_DURATION;
   fighter.pulseCooldown = fighter.def.pulseCooldown * (fighter.gear.pulseCooldownMultiplier || 1);
   Sound.sfx("shoot", chargeRatio);
@@ -1588,6 +1612,7 @@ function triggerSpecialAction(fighter) {
   if (fighter.specialCooldown > 0 || isSpecialActive(fighter) || screenMode !== "battle") return;
 
   const type = fighter.def.specialType;
+  if (isInsideEnemyCryField(fighter) && !canUseSpecialInsideEnemyCryField(fighter)) return;
   const cx = fighter.x + fighter.w / 2;
   const cy = fighter.y + fighter.h / 2;
   Sound.sfx("special");
@@ -2241,6 +2266,16 @@ function hitFighter(target, attackerCenterX, baseKnockVx = 340, chillDuration = 
 function stepFighter(f, input, dt, platforms) {
   const assist = assistOptions[f.id] || { autoFire: false, autoAim: false, fullAuto: false };
   const opponent = fighters.find((other) => other.id !== f.id);
+  const silencedByCryField = isInsideEnemyCryField(f);
+
+  // フィールドに入った時点で、発動待ちの攻撃チャージも中断する
+  if (silencedByCryField && f.mindChargeTimer > 0) {
+    f.mindChargeTimer = 0;
+    if (f.pendingSpecialCooldown > 0) {
+      f.specialCooldown = f.pendingSpecialCooldown;
+      f.pendingSpecialCooldown = 0;
+    }
+  }
 
   if (f.invincibleTimer > 0) f.invincibleTimer = Math.max(0, f.invincibleTimer - dt);
   if (f.starTimer > 0) {
@@ -2387,7 +2422,13 @@ function stepFighter(f, input, dt, platforms) {
 
   if (f.attackLockTimer > 0) { input.left = false; input.right = false; input.jumpPressed = false; f.vx *= 0.78; }
   // 攻撃チャージ＆オートチャージ連射＆フルオート攻撃アシスト
-  const effectivePulseHeld = input.pulseHeld || assist.fullAuto;
+  // 涙フィールド内では通常攻撃を禁止し、溜め中の攻撃も解除する。
+  if (silencedByCryField) {
+    input.pulseReleased = false;
+    f.isChargingPulse = false;
+    f.pulseChargeTime = 0;
+  }
+  const effectivePulseHeld = !silencedByCryField && (input.pulseHeld || assist.fullAuto);
 
   if (effectivePulseHeld && f.pulseCooldown <= 0 && f.mindChargeTimer <= 0) {
     f.isChargingPulse = true;
@@ -2416,10 +2457,13 @@ function stepFighter(f, input, dt, platforms) {
     f.pulseChargeTime = 0;
   }
 
-  // 特殊技の発動（手動ボタン または フルオート攻撃時かつクールタイム完了）
-  const autoSpecialAllowed = assist.fullAuto && f.def.specialType !== "bandage_change";
-  if (input.specialPressed || (autoSpecialAllowed && f.specialCooldown <= 0 && !isSpecialActive(f))) {
-    input.specialPressed = false;
+  // 特殊技の発動。涙フィールド内では自己強化・回復系だけ許可する。
+  const specialAllowed = !silencedByCryField || canUseSpecialInsideEnemyCryField(f);
+  const requestedSpecial = input.specialPressed;
+  input.specialPressed = false;
+  const autoSpecialAllowed = specialAllowed && assist.fullAuto && f.def.specialType !== "bandage_change";
+  if ((requestedSpecial && specialAllowed) ||
+      (autoSpecialAllowed && f.specialCooldown <= 0 && !isSpecialActive(f))) {
     triggerSpecialAction(f);
   }
 
