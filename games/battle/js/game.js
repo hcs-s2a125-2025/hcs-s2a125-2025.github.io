@@ -138,6 +138,7 @@ let fieldItems = [];
 let itemSpawnTimer = 5.5;
 let particles = [];
 let impactFlashes = [];
+let hugTugEffects = [];
 let timeElapsed = 0;
 let screenShakeTimer = 0;
 let screenShakeMagnitude = 0;
@@ -986,6 +987,8 @@ function createFighter(id, label, emoji, gearEmoji, x, facing, accentColor) {
     slowTimer: 0,
     bandageChangeTimer: 0,
     bandageChangesUsed: 0,
+    attackLockTimer: 0,
+    teddyGuardTimer: 0,
     warpBeacon: null,
     atlasPin: null,
     squashX: 1,
@@ -1357,6 +1360,7 @@ function triggerPulse(fighter, chargeRatio = 0) {
   );
 
   const style = fighter.def.projectileStyle || "mega_wave";
+  if (fighter.def.attackLockDuration) fighter.attackLockTimer = fighter.def.attackLockDuration;
   const isBullet = style === "bullet";
   const isBounceBall = style === "bounce_ball";
   const isPoopBomb = style === "poop_bomb";
@@ -2173,6 +2177,7 @@ function hitFighter(target, attackerCenterX, baseKnockVx = 340, chillDuration = 
   if (pullSpeed > 0) {
     target.vx = -pushDir * pullSpeed;
     target.vy = -150;
+    hugTugEffects.push({ x1: attackerCenterX, y1: target.y + target.h / 2, x2: target.x + target.w / 2, y2: target.y + target.h / 2, life: 0.22, maxLife: 0.22 });
   } else {
     target.vx = pushDir * baseKnockVx * target.def.knockbackScale * (target.gear.knockbackMultiplier || 1);
     target.vy = -340;
@@ -2213,6 +2218,8 @@ function stepFighter(f, input, dt, platforms) {
   }
   if (f.pulseTimer > 0) f.pulseTimer = Math.max(0, f.pulseTimer - dt);
   if (f.pulseCooldown > 0) f.pulseCooldown = Math.max(0, f.pulseCooldown - dt);
+  if (f.attackLockTimer > 0) f.attackLockTimer = Math.max(0, f.attackLockTimer - dt);
+  if (f.teddyGuardTimer > 0) f.teddyGuardTimer = Math.max(0, f.teddyGuardTimer - dt);
   if (f.chillTimer > 0) {
     f.chillTimer = Math.max(0, f.chillTimer - dt);
     if (Math.random() < 0.25) {
